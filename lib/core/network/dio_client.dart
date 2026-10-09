@@ -1,4 +1,5 @@
 import 'package:chat_app/core/config/env.dart';
+import 'package:chat_app/core/network/api_endpoints.dart';
 import 'package:chat_app/core/network/auth_interceptor.dart';
 import 'package:chat_app/core/storage/session_storage.dart';
 import 'package:dio/dio.dart';
@@ -22,10 +23,22 @@ final dioProvider = Provider<Dio>((ref) {
   dio.interceptors.add(AuthInterceptor(session));
 
   if (kDebugMode) {
-    dio.interceptors.add(
-      LogInterceptor(requestBody: true, responseBody: true),
-    );
+    dio.interceptors.add(LogInterceptor(requestBody: true, responseBody: true));
   }
 
   return dio;
 });
+
+final healthClientProvider = Provider<HealthClient>((ref) {
+  return HealthClient(ref.watch(dioProvider));
+});
+
+class HealthClient {
+  const HealthClient(this._dio);
+  final Dio _dio;
+
+  Future<bool> ping() async {
+    final res = await _dio.get<Map<String, dynamic>>(ApiEndpoints.health);
+    return res.data?['ok'] == true;
+  }
+}
