@@ -1,60 +1,264 @@
+import 'package:chat_app/core/storage/session_storage.dart';
+import 'package:chat_app/core/widgets/error_view.dart';
+import 'package:chat_app/features/chat/domain/entities/chat_message.dart';
+import 'package:chat_app/features/chat/presentation/providers/chat_controller.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class ChatPage extends StatelessWidget {
-  const ChatPage({super.key, required this.conversationId});
+const _zaloBlue = Color(0xFF0068FF);
+
+class ChatPage extends ConsumerStatefulWidget {
+  const ChatPage({
+    super.key,
+    required this.conversationId,
+    this.title,
+  });
 
   final String conversationId;
+  final String? title;
+
+  @override
+  ConsumerState<ChatPage> createState() => _ChatPageState();
+}
+
+class _ChatPageState extends ConsumerState<ChatPage> {
+  final _composer = TextEditingController();
+
+  @override
+  void dispose() {
+    _composer.dispose();
+    super.dispose();
+  }
+
+  Future<void> _send() async {
+    final text = _composer.text.trim();
+    if (text.isEmpty) return;
+    _composer.clear();
+    await ref
+        .read(chatControllerProvider(widget.conversationId).notifier)
+        .send(text);
+  }
 
   @override
   Widget build(BuildContext context) {
+    final chat = ref.watch(chatControllerProvider(widget.conversationId));
+    final myId = ref.watch(sessionStorageProvider).user?.id;
+
     return Scaffold(
-      appBar: AppBar(title: Text('Hội thoại $conversationId')),
+      backgroundColor: const Color(0xFFE8F3FF),
+      appBar: AppBar(
+        backgroundColor: _zaloBlue,
+        foregroundColor: Colors.white,
+        title: Text(widget.title ?? 'Chat'),
+      ),
       body: Column(
         children: [
           Expanded(
-            child: Center(
-              child: Text(
-                'Màn chat — nối WebSocket + API tại đây\n(id: $conversationId)',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
+            child: _MessageList(
+              chat: chat,
+              myId: myId,
+              onRetry: () => ref
+                  .read(chatControllerProvider(widget.conversationId).notifier)
+                  .load(),
             ),
           ),
-          const _MessageComposer(),
+          if (chat.error != null && chat.messages.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
+              child: Text(
+                chat.error!,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ),
+          _MessageComposer(
+            controller: _composer,
+            sending: chat.isSending,
+            onSend: _send,
+          ),
         ],
       ),
     );
   }
 }
 
+class _MessageList extends StatelessWidget {
+  const _MessageList({
+    required this.chat,
+    required this.myId,
+    required this.onRetry,
+  });
+
+  final ChatController chat;
+  final String? myId;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    if (chat.isLoading && chat.messages.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (chat.error != null && chat.messages.isEmpty) {
+      return ErrorView(message: chat.error!, onRetry: onRetry);
+    }
+    if (chat.messages.isEmpty) {
+      return const Center(child: Text('Chưa có tin nhắn'));
+    }
+
+    return ListView.builder(
+      reverse: true,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      itemCount: chat.messages.length,
+      itemBuilder: (context, index) {
+        final message = chat.messages[index];
+        return _MessageBubble(
+          key: ValueKey(message.id),
+          message: message,
+          isMine: myId != null && message.userId == myId,
+        );
+      },
+    );
+  }
+}
+
+class _MessageBubble extends StatelessWidget {
+  const _MessageBubble({
+    super.key,
+    required this.message,
+    required this.isMine,
+  });
+
+  final ChatMessage message;
+  final bool isMine;
+
+  @override
+  Widget build(BuildContext context) {
+    final time = TimeOfDay.fromDateTime(message.createdAt.toLocal());
+    final timeLabel =
+        '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+
+    return Align(
+      alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.sizeOf(context).width * 0.75,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Column(
+            crossAxisAlignment:
+                isMine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+            children: [
+              if (!isMine)
+                Padding(
+                  padding: const EdgeInsets.only(left: 4, bottom: 2),
+                  child: Text(
+                    message.authorName,
+                    style: const TextStyle(fontSize: 11, color: Colors.black54),
+                  ),
+                ),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: isMine
+                      ? _zaloBlue
+                      : message.isAgent
+                          ? const Color(0xFFFFF3E0)
+                          : Colors.white,
+                  borderRadius: BorderRadius.only(
+                    topLeft: const Radius.circular(16),
+                    topRight: const Radius.circular(16),
+                    bottomLeft: Radius.circular(isMine ? 16 : 4),
+                    bottomRight: Radius.circular(isMine ? 4 : 16),
+                  ),
+                ),
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  child: Text(
+                    message.content,
+                    style: TextStyle(
+                      color: isMine ? Colors.white : Colors.black87,
+                    ),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(top: 2, left: 4, right: 4),
+                child: Text(
+                  timeLabel,
+                  style: const TextStyle(fontSize: 10, color: Colors.black45),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _MessageComposer extends StatelessWidget {
-  const _MessageComposer();
+  const _MessageComposer({
+    required this.controller,
+    required this.sending,
+    required this.onSend,
+  });
+
+  final TextEditingController controller;
+  final bool sending;
+  final VoidCallback onSend;
 
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(8),
-        child: Row(
-          children: [
-            IconButton(
-              onPressed: () {},
-              icon: const Icon(Icons.add),
-            ),
-            const Expanded(
-              child: TextField(
-                decoration: InputDecoration(
-                  hintText: 'Nhập tin nhắn...',
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      top: false,
+      child: ColoredBox(
+        color: Colors.white,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(8, 8, 4, 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: controller,
+                  minLines: 1,
+                  maxLines: 4,
+                  textInputAction: TextInputAction.send,
+                  onSubmitted: (_) => onSend(),
+                  decoration: InputDecoration(
+                    hintText: 'Tin nhắn',
+                    filled: true,
+                    fillColor: const Color(0xFFF0F2F5),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      borderSide: BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(20),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
+                  ),
                 ),
               ),
-            ),
-            IconButton(
-              onPressed: () {},
-              icon: const Icon(Icons.send),
-            ),
-          ],
+              IconButton(
+                onPressed: sending ? null : onSend,
+                icon: sending
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.send, color: _zaloBlue),
+              ),
+            ],
+          ),
         ),
       ),
     );

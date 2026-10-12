@@ -61,7 +61,10 @@ class _ConversationTile extends StatelessWidget {
       trailing: conversation.unreadCount > 0
           ? Badge(label: Text('${conversation.unreadCount}'))
           : null,
-      onTap: () => context.push(AppRoutes.chatPath(conversation.id)),
+      onTap: () => context.push(
+        AppRoutes.chatPath(conversation.id),
+        extra: conversation.title,
+      ),
     );
   }
 }
