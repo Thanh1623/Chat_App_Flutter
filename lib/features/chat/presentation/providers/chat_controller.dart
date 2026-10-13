@@ -1,16 +1,21 @@
+import 'dart:async';
+
 import 'package:chat_app/core/error/failure.dart';
+import 'package:chat_app/core/network/chat_socket_client.dart';
+import 'package:chat_app/core/storage/session_storage.dart';
 import 'package:chat_app/features/chat/data/providers/chat_repository_provider.dart';
 import 'package:chat_app/features/chat/domain/entities/chat_message.dart';
 import 'package:chat_app/features/chat/domain/repositories/chat_repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+// chatControllerProvider là cách để provider cho chat controller
 final chatControllerProvider = ChangeNotifierProvider.autoDispose
     .family<ChatController, String>((ref, roomId) {
-  final controller = ChatController(ref, roomId);
-  controller.load();
-  return controller;
-});
+      final controller = ChatController(ref, roomId);
+      controller.load();
+      return controller;
+    });
 
 class ChatController extends ChangeNotifier {
   ChatController(this._ref, this.roomId);
@@ -23,6 +28,9 @@ class ChatController extends ChangeNotifier {
   bool _sending = false;
   String? _error;
 
+  /// Giữ subscription để lúc thoát phòng thì cancel (tránh leak).
+  StreamSubscription<ChatMessage>? _socketSub;
+
   List<ChatMessage> get messages => _messages;
   bool get isLoading => _loading;
   bool get isSending => _sending;
@@ -30,14 +38,15 @@ class ChatController extends ChangeNotifier {
 
   ChatRepository get _repo => _ref.read(chatRepositoryProvider);
 
+  /// load là phương thức để load tin nhắn từ server
   Future<void> load() async {
     _loading = true;
     _error = null;
     notifyListeners();
     try {
       final items = await _repo.fetchMessages(roomId);
-      // ponytail: newest first for ListView reverse:true (index 0 at bottom)
       _messages = items.reversed.toList();
+      _startRealtime();
     } on Failure catch (e) {
       _error = e.message;
     } catch (e) {
@@ -48,13 +57,42 @@ class ChatController extends ChangeNotifier {
     }
   }
 
+  /// _startRealtime là phương thức để start realtime
+  void _startRealtime() {
+    final token = _ref.read(sessionStorageProvider).accessToken;
+    if (token == null || token.isEmpty) return;
+
+    final socket = _ref.read(chatSocketClientProvider);
+    socket.join(roomId);
+    socket.connect(token: token);
+
+    _socketSub?.cancel();
+    _socketSub = _repo.watchMessages(roomId).listen(_onSocketMessage);
+  }
+
+  /// _onSocketMessage là phương thức để xử lý tin nhắn từ server
+  void _onSocketMessage(ChatMessage incoming) {
+    _addIfNew(incoming);
+  }
+
+  /// _addIfNew là phương thức để thêm tin nhắn mới vào danh sách tin nhắn
+  /// chống duplicate
+  void _addIfNew(ChatMessage incoming) {
+    if (incoming.id.isEmpty) return;
+    if (_messages.any((m) => m.id == incoming.id)) return;
+    _messages = [incoming, ..._messages];
+    notifyListeners();
+  }
+
+  /// send là phương thức để gửi tin nhắn tới server
   Future<void> send(String content) async {
     _sending = true;
     _error = null;
     notifyListeners();
     try {
       final sent = await _repo.sendMessage(roomId, content);
-      _messages = [sent, ..._messages];
+      // Socket thường echo trước khi POST trả về — cùng id thì không thêm lần 2.
+      _addIfNew(sent);
     } on Failure catch (e) {
       _error = e.message;
     } catch (e) {
@@ -63,5 +101,12 @@ class ChatController extends ChangeNotifier {
       _sending = false;
       notifyListeners();
     }
+  }
+
+  /// dispose là phương thức để dispose controller
+  @override
+  void dispose() {
+    _socketSub?.cancel();
+    super.dispose();
   }
 }
