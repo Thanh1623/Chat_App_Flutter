@@ -18,9 +18,20 @@ class ChatSocketClient {
 
   Stream<Map<String, dynamic>> get messages => _messages.stream;
 
+  String? _token;
+
+  /// Kết nối nếu chưa có socket; không reconnect khi token giống và đang connected.
+  void ensureConnected({required String token}) {
+    if (_socket != null && _token == token && _socket!.connected) {
+      return;
+    }
+    connect(token: token);
+  }
+
   /// connect là phương thức để kết nối tới server
   /// token là token của user
   void connect({required String token}) {
+    _token = token;
     _socket?.dispose();
     _socket = null;
 
@@ -87,6 +98,7 @@ class ChatSocketClient {
 
   void disconnect() {
     _roomId = null;
+    _token = null;
     _socket?.dispose();
     _socket = null;
   }

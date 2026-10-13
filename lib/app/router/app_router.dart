@@ -1,9 +1,13 @@
+import 'package:chat_app/app/presentation/main_shell.dart';
+import 'package:chat_app/app/router/chat_route_args.dart';
 import 'package:chat_app/app/router/routes.dart';
 import 'package:chat_app/features/auth/presentation/login_page.dart';
 import 'package:chat_app/features/auth/presentation/providers/auth_controller.dart';
 import 'package:chat_app/features/chat/presentation/chat_page.dart';
+import 'package:chat_app/features/contacts/presentation/joined_groups_page.dart';
 import 'package:chat_app/features/conversations/presentation/conversations_page.dart';
-import 'package:chat_app/features/settings/presentation/settings_page.dart';
+import 'package:chat_app/features/conversations/presentation/new_chat_page.dart';
+import 'package:chat_app/features/profile/presentation/profile_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -38,21 +42,58 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.login,
         builder: (context, state) => const LoginPage(),
       ),
-      GoRoute(
-        path: AppRoutes.home,
-        builder: (context, state) => const ConversationsPage(),
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) {
+          return MainShell(navigationShell: navigationShell);
+        },
+        branches: [
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.home,
+                builder: (context, state) => const ConversationsPage(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.contacts,
+                builder: (context, state) => const JoinedGroupsPage(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.profile,
+                builder: (context, state) => const ProfilePage(),
+              ),
+            ],
+          ),
+        ],
       ),
       GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: AppRoutes.newChat,
+        builder: (context, state) => const NewChatPage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
         path: AppRoutes.chat,
         builder: (context, state) {
           final id = state.pathParameters['conversationId']!;
-          final title = state.extra is String ? state.extra as String : null;
+          final extra = state.extra;
+          if (extra is ChatRouteArgs) {
+            return ChatPage(
+              conversationId: id,
+              title: extra.title,
+              canDelete: extra.canDelete,
+            );
+          }
+          final title = extra is String ? extra : null;
           return ChatPage(conversationId: id, title: title);
         },
-      ),
-      GoRoute(
-        path: AppRoutes.settings,
-        builder: (context, state) => const SettingsPage(),
       ),
     ],
   );

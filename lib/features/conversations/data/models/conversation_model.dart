@@ -8,6 +8,7 @@ class ConversationModel {
     required this.lastMessagePreview,
     required this.updatedAt,
     this.unreadCount = 0,
+    this.canDelete = false,
   });
 
   final String id;
@@ -16,6 +17,7 @@ class ConversationModel {
   final String lastMessagePreview;
   final DateTime updatedAt;
   final int unreadCount;
+  final bool canDelete;
 
   Conversation toEntity() => Conversation(
     id: id,
@@ -24,6 +26,7 @@ class ConversationModel {
     lastMessagePreview: lastMessagePreview,
     updatedAt: updatedAt,
     unreadCount: unreadCount,
+    canDelete: canDelete,
   );
 
   static String _lastMessagePreviewFromJson(Map<String, dynamic> json) {
@@ -40,7 +43,8 @@ class ConversationModel {
   }
 
   factory ConversationModel.fromJson(Map<String, dynamic> json) {
-    final typeRaw = json['type']?.toString() ?? 'direct';
+    final typeRaw =
+        json['type']?.toString() ?? json['kind']?.toString() ?? 'direct';
     return ConversationModel(
       id: json['id']?.toString() ?? '',
       title: json['title']?.toString() ?? json['name']?.toString() ?? '',
@@ -52,6 +56,7 @@ class ConversationModel {
           DateTime.tryParse(json['updatedAt']?.toString() ?? '') ??
           DateTime.now(),
       unreadCount: (json['unreadCount'] as num?)?.toInt() ?? 0,
+      canDelete: json['canDelete'] == true,
     );
   }
 }

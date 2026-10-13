@@ -2,16 +2,23 @@ import 'package:chat_app/core/storage/session_storage.dart';
 import 'package:chat_app/core/widgets/error_view.dart';
 import 'package:chat_app/features/chat/domain/entities/chat_message.dart';
 import 'package:chat_app/features/chat/presentation/providers/chat_controller.dart';
+import 'package:chat_app/features/conversations/presentation/providers/conversations_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 const _zaloBlue = Color(0xFF0068FF);
 
 class ChatPage extends ConsumerStatefulWidget {
-  const ChatPage({super.key, required this.conversationId, this.title});
+  const ChatPage({
+    super.key,
+    required this.conversationId,
+    this.title,
+    this.canDelete = false,
+  });
 
   final String conversationId;
   final String? title;
+  final bool canDelete;
 
   @override
   ConsumerState<ChatPage> createState() => _ChatPageState();
@@ -37,18 +44,76 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         .send(text);
   }
 
+  Future<void> _confirmDeleteGroup() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Xóa nhóm?'),
+        content: const Text(
+          'Toàn bộ tin nhắn trong nhóm sẽ bị xóa. Không thể hoàn tác.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Hủy'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Xóa'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+
+    try {
+      await ref
+          .read(conversationsRepositoryProvider)
+          .deleteRoom(widget.conversationId);
+      ref.invalidate(conversationsProvider);
+      if (mounted) Navigator.of(context).pop();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString())),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final myId = ref.watch(sessionStorageProvider).user?.id;
     final roomId = widget.conversationId;
 
-    return Scaffold(
+    return PopScope(
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) {
+          ref.invalidate(conversationsProvider);
+        }
+      },
+      child: Scaffold(
       backgroundColor: const Color(0xFFE8F3FF),
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: _zaloBlue,
         foregroundColor: Colors.white,
         title: Text(widget.title ?? 'Chat'),
+        actions: [
+          if (widget.canDelete)
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert),
+              onSelected: (value) {
+                if (value == 'delete') _confirmDeleteGroup();
+              },
+              itemBuilder: (context) => const [
+                PopupMenuItem(
+                  value: 'delete',
+                  child: Text('Xóa nhóm'),
+                ),
+              ],
+            ),
+        ],
       ),
       body: Column(
         children: [
@@ -92,6 +157,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             },
           ),
         ],
+      ),
       ),
     );
   }

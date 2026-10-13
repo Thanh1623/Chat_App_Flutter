@@ -15,4 +15,27 @@ class ConversationsRemoteDataSource {
         .map(ConversationModel.fromJson)
         .toList();
   }
+
+  Future<ConversationModel> openDirect(String userId) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      ApiEndpoints.roomsDirect,
+      data: {'userId': userId},
+    );
+    return ConversationModel.fromJson(response.data ?? {});
+  }
+
+  Future<ConversationModel> createGroup({
+    required String name,
+    required List<String> memberIds,
+  }) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      ApiEndpoints.createRoom,
+      data: {'name': name, 'memberIds': memberIds},
+    );
+    return ConversationModel.fromJson(response.data ?? {});
+  }
+
+  Future<void> deleteRoom(String roomId) async {
+    await _dio.delete<void>(ApiEndpoints.deleteRoom(roomId));
+  }
 }

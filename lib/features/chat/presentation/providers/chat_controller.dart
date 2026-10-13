@@ -6,6 +6,7 @@ import 'package:chat_app/core/storage/session_storage.dart';
 import 'package:chat_app/features/chat/data/providers/chat_repository_provider.dart';
 import 'package:chat_app/features/chat/domain/entities/chat_message.dart';
 import 'package:chat_app/features/chat/domain/repositories/chat_repository.dart';
+import 'package:chat_app/features/conversations/presentation/providers/conversations_provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -63,8 +64,8 @@ class ChatController extends ChangeNotifier {
     if (token == null || token.isEmpty) return;
 
     final socket = _ref.read(chatSocketClientProvider);
+    socket.ensureConnected(token: token);
     socket.join(roomId);
-    socket.connect(token: token);
 
     _socketSub?.cancel();
     _socketSub = _repo.watchMessages(roomId).listen(_onSocketMessage);
@@ -81,6 +82,7 @@ class ChatController extends ChangeNotifier {
     if (incoming.id.isEmpty) return;
     if (_messages.any((m) => m.id == incoming.id)) return;
     _messages = [incoming, ..._messages];
+    _ref.invalidate(conversationsProvider);
     notifyListeners();
   }
 
@@ -99,6 +101,7 @@ class ChatController extends ChangeNotifier {
       _error = e.toString();
     } finally {
       _sending = false;
+      _ref.invalidate(conversationsProvider);
       notifyListeners();
     }
   }

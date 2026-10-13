@@ -8,4 +8,9 @@ abstract final class ApiEndpoints {
   static String conversationMessages(String id) => '/rooms/$id/messages';
 
   static const health = '/health';
+
+  static const users = '/users';
+  static const roomsDirect = '/rooms/direct';
+  static const createRoom = '/rooms'; // POST
+  static String deleteRoom(String id) => '/rooms/$id';
 }

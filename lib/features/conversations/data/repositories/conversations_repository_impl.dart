@@ -17,4 +17,39 @@ class ConversationsRepositoryImpl implements ConversationsRepository {
       throw mapException(e);
     }
   }
+
+  @override
+  Future<Conversation> openDirect(String userId) async {
+    try {
+      final model = await _remote.openDirect(userId);
+      return model.toEntity();
+    } catch (e) {
+      throw mapException(e);
+    }
+  }
+
+  @override
+  Future<Conversation> createGroup({
+    required String name,
+    required List<String> memberIds,
+  }) async {
+    try {
+      final model = await _remote.createGroup(
+        name: name,
+        memberIds: memberIds,
+      );
+      return model.toEntity();
+    } catch (e) {
+      throw mapException(e);
+    }
+  }
+
+  @override
+  Future<void> deleteRoom(String roomId) async {
+    try {
+      await _remote.deleteRoom(roomId);
+    } catch (e) {
+      throw mapException(e);
+    }
+  }
 }

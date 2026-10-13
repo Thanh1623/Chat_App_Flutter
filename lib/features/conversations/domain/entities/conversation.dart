@@ -8,6 +8,7 @@ class Conversation {
     required this.lastMessagePreview,
     required this.updatedAt,
     this.unreadCount = 0,
+    this.canDelete = false,
   });
 
   final String id;
@@ -16,4 +17,5 @@ class Conversation {
   final String lastMessagePreview;
   final DateTime updatedAt;
   final int unreadCount;
+  final bool canDelete;
 }
