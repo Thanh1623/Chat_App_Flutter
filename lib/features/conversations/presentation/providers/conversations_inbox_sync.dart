@@ -3,13 +3,16 @@ import 'dart:async';
 import 'package:chat_app/core/network/chat_socket_client.dart';
 import 'package:chat_app/core/storage/session_storage.dart';
 import 'package:chat_app/features/auth/presentation/providers/auth_controller.dart';
+import 'package:chat_app/features/conversations/domain/entities/conversation.dart';
 import 'package:chat_app/features/conversations/presentation/providers/conversations_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Giữ socket + join mọi phòng trong inbox; tin mới → refresh danh sách.
+/// Socket inbox: join các phòng đã load; tin mới → refresh list (debounced).
 final conversationsInboxSyncProvider = Provider<void>((ref) {
-  final auth = ref.watch(authControllerProvider);
-  if (!auth.isAuthenticated) {
+  final isLoggedIn = ref.watch(
+    authControllerProvider.select((auth) => auth.isAuthenticated),
+  );
+  if (!isLoggedIn) {
     return;
   }
 
@@ -24,17 +27,21 @@ final conversationsInboxSyncProvider = Provider<void>((ref) {
   Timer? debounce;
   final sub = socket.messages.listen((_) {
     debounce?.cancel();
-    debounce = Timer(const Duration(milliseconds: 350), () {
+    debounce = Timer(const Duration(milliseconds: 500), () {
       ref.invalidate(conversationsProvider);
     });
   });
 
-  ref.watch(conversationsProvider).whenData((conversations) {
+  void joinRooms(List<Conversation> conversations) {
     socket.ensureConnected(token: token);
     for (final c in conversations) {
       socket.join(c.id);
     }
-  });
+  }
+
+  ref.listen(conversationsProvider, (previous, next) {
+    next.whenData(joinRooms);
+  }, fireImmediately: true);
 
   ref.onDispose(() {
     debounce?.cancel();

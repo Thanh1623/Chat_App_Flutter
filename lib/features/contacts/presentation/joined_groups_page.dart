@@ -16,19 +16,20 @@ class JoinedGroupsPage extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Danh bạ'),
-        bottom: const PreferredSize(
-          preferredSize: Size.fromHeight(28),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(16, 0, 16, 10),
-              child: Text(
-                'Nhóm đã tham gia',
-                style: TextStyle(fontSize: 13, color: Colors.black54),
+        title: const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Danh bạ'),
+            Text(
+              'Nhóm đã tham gia',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.normal,
+                color: Colors.black54,
               ),
             ),
-          ),
+          ],
         ),
       ),
       body: asyncConversations.when(

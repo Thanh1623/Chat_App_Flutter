@@ -25,4 +25,11 @@ class ChatRemoteDataSource {
     );
     return MessageModel.fromJson(response.data ?? {});
   }
+
+  Future<void> markRead(String roomId, String messageId) async {
+    await _dio.post<void>(
+      ApiEndpoints.markRoomRead(roomId),
+      data: {'messageId': messageId},
+    );
+  }
 }

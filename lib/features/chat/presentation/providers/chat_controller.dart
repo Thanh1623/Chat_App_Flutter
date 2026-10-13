@@ -47,6 +47,7 @@ class ChatController extends ChangeNotifier {
     try {
       final items = await _repo.fetchMessages(roomId);
       _messages = items.reversed.toList();
+      await _markLatestRead();
       _startRealtime();
     } on Failure catch (e) {
       _error = e.message;
@@ -74,6 +75,7 @@ class ChatController extends ChangeNotifier {
   /// _onSocketMessage là phương thức để xử lý tin nhắn từ server
   void _onSocketMessage(ChatMessage incoming) {
     _addIfNew(incoming);
+    _markLatestRead();
   }
 
   /// _addIfNew là phương thức để thêm tin nhắn mới vào danh sách tin nhắn
@@ -82,7 +84,6 @@ class ChatController extends ChangeNotifier {
     if (incoming.id.isEmpty) return;
     if (_messages.any((m) => m.id == incoming.id)) return;
     _messages = [incoming, ..._messages];
-    _ref.invalidate(conversationsProvider);
     notifyListeners();
   }
 
@@ -95,14 +96,26 @@ class ChatController extends ChangeNotifier {
       final sent = await _repo.sendMessage(roomId, content);
       // Socket thường echo trước khi POST trả về — cùng id thì không thêm lần 2.
       _addIfNew(sent);
+      await _markLatestRead();
     } on Failure catch (e) {
       _error = e.message;
     } catch (e) {
       _error = e.toString();
     } finally {
       _sending = false;
-      _ref.invalidate(conversationsProvider);
       notifyListeners();
+    }
+  }
+
+  Future<void> _markLatestRead() async {
+    if (_messages.isEmpty) return;
+    final latest = _messages.first;
+    if (latest.id.isEmpty) return;
+    try {
+      await _repo.markRead(roomId, latest.id);
+      _ref.invalidate(conversationsProvider);
+    } catch (_) {
+      // ponytail: read receipt không chặn chat
     }
   }
 

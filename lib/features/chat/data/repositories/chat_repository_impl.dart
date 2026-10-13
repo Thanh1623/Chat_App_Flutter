@@ -38,6 +38,15 @@ class ChatRepositoryImpl implements ChatRepository {
   }
 
   @override
+  Future<void> markRead(String roomId, String messageId) async {
+    try {
+      await _remote.markRead(roomId, messageId);
+    } catch (e) {
+      throw mapException(e);
+    }
+  }
+
+  @override
   /// Xem tin nhắn từ socket
   Stream<ChatMessage> watchMessages(String roomId) {
     // _socket.messages là stream của tin nhắn từ socket

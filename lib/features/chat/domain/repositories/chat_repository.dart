@@ -4,6 +4,8 @@ abstract interface class ChatRepository {
   Future<List<ChatMessage>> fetchMessages(String roomId);
   Future<ChatMessage> sendMessage(String roomId, String content);
 
+  Future<void> markRead(String roomId, String messageId);
+
   /// Tin mới từ Socket. Chỉ room đang mở.
   Stream<ChatMessage> watchMessages(String roomId);
 }

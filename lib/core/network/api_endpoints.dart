@@ -6,6 +6,7 @@ abstract final class ApiEndpoints {
 
   static const conversations = '/rooms';
   static String conversationMessages(String id) => '/rooms/$id/messages';
+  static String markRoomRead(String roomId) => '/rooms/$roomId/read';
 
   static const health = '/health';
 

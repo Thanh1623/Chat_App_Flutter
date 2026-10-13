@@ -14,7 +14,14 @@ final conversationsRepositoryProvider = Provider<ConversationsRepository>((ref) 
   return ConversationsRepositoryImpl(ref.watch(conversationsRemoteDataSourceProvider));
 });
 
-final conversationsProvider =
-    FutureProvider.autoDispose<List<Conversation>>((ref) {
+final conversationsProvider = FutureProvider<List<Conversation>>((ref) {
   return ref.watch(conversationsRepositoryProvider).fetchConversations();
+});
+
+final totalUnreadCountProvider = Provider<int>((ref) {
+  final async = ref.watch(conversationsProvider);
+  return async.maybeWhen(
+    data: (list) => list.fold<int>(0, (sum, c) => sum + c.unreadCount),
+    orElse: () => 0,
+  );
 });
