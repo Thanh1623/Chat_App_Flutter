@@ -8,11 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 const _zaloBlue = Color(0xFF0068FF);
 
 class ChatPage extends ConsumerStatefulWidget {
-  const ChatPage({
-    super.key,
-    required this.conversationId,
-    this.title,
-  });
+  const ChatPage({super.key, required this.conversationId, this.title});
 
   final String conversationId;
   final String? title;
@@ -23,9 +19,11 @@ class ChatPage extends ConsumerStatefulWidget {
 
 class _ChatPageState extends ConsumerState<ChatPage> {
   final _composer = TextEditingController();
+  final _composerFocus = FocusNode();
 
   @override
   void dispose() {
+    _composerFocus.dispose();
     _composer.dispose();
     super.dispose();
   }
@@ -41,11 +39,12 @@ class _ChatPageState extends ConsumerState<ChatPage> {
 
   @override
   Widget build(BuildContext context) {
-    final chat = ref.watch(chatControllerProvider(widget.conversationId));
     final myId = ref.watch(sessionStorageProvider).user?.id;
+    final roomId = widget.conversationId;
 
     return Scaffold(
       backgroundColor: const Color(0xFFE8F3FF),
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: _zaloBlue,
         foregroundColor: Colors.white,
@@ -54,26 +53,43 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       body: Column(
         children: [
           Expanded(
-            child: _MessageList(
-              chat: chat,
-              myId: myId,
-              onRetry: () => ref
-                  .read(chatControllerProvider(widget.conversationId).notifier)
-                  .load(),
+            child: Consumer(
+              builder: (context, ref, _) {
+                final chat = ref.watch(chatControllerProvider(roomId));
+                return _MessageList(
+                  chat: chat,
+                  myId: myId,
+                  onRetry: () =>
+                      ref.read(chatControllerProvider(roomId).notifier).load(),
+                );
+              },
             ),
           ),
-          if (chat.error != null && chat.messages.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
-              child: Text(
-                chat.error!,
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
-              ),
-            ),
-          _MessageComposer(
-            controller: _composer,
-            sending: chat.isSending,
-            onSend: _send,
+          Consumer(
+            builder: (context, ref, _) {
+              final chat = ref.watch(chatControllerProvider(roomId));
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (chat.error != null && chat.messages.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
+                      child: Text(
+                        chat.error!,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
+                    ),
+                  _MessageComposer(
+                    controller: _composer,
+                    focusNode: _composerFocus,
+                    sending: chat.isSending,
+                    onSend: _send,
+                  ),
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -145,8 +161,9 @@ class _MessageBubble extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 4),
           child: Column(
-            crossAxisAlignment:
-                isMine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+            crossAxisAlignment: isMine
+                ? CrossAxisAlignment.end
+                : CrossAxisAlignment.start,
             children: [
               if (!isMine)
                 Padding(
@@ -161,8 +178,8 @@ class _MessageBubble extends StatelessWidget {
                   color: isMine
                       ? _zaloBlue
                       : message.isAgent
-                          ? const Color(0xFFFFF3E0)
-                          : Colors.white,
+                      ? const Color(0xFFFFF3E0)
+                      : Colors.white,
                   borderRadius: BorderRadius.only(
                     topLeft: const Radius.circular(16),
                     topRight: const Radius.circular(16),
@@ -171,8 +188,10 @@ class _MessageBubble extends StatelessWidget {
                   ),
                 ),
                 child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   child: Text(
                     message.content,
                     style: TextStyle(
@@ -199,11 +218,13 @@ class _MessageBubble extends StatelessWidget {
 class _MessageComposer extends StatelessWidget {
   const _MessageComposer({
     required this.controller,
+    required this.focusNode,
     required this.sending,
     required this.onSend,
   });
 
   final TextEditingController controller;
+  final FocusNode focusNode;
   final bool sending;
   final VoidCallback onSend;
 
@@ -220,6 +241,7 @@ class _MessageComposer extends StatelessWidget {
               Expanded(
                 child: TextField(
                   controller: controller,
+                  focusNode: focusNode,
                   minLines: 1,
                   maxLines: 4,
                   textInputAction: TextInputAction.send,

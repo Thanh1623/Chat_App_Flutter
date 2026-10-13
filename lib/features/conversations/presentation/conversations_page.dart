@@ -54,9 +54,16 @@ class _ConversationTile extends StatelessWidget {
       ),
       title: Text(conversation.title),
       subtitle: Text(
-        conversation.lastMessagePreview,
+        conversation.lastMessagePreview.isEmpty
+            ? 'Chưa có tin nhắn'
+            : conversation.lastMessagePreview,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: conversation.lastMessagePreview.isEmpty
+                  ? Theme.of(context).colorScheme.outline
+                  : null,
+            ),
       ),
       trailing: conversation.unreadCount > 0
           ? Badge(label: Text('${conversation.unreadCount}'))

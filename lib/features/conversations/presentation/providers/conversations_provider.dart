@@ -14,6 +14,7 @@ final conversationsRepositoryProvider = Provider<ConversationsRepository>((ref) 
   return ConversationsRepositoryImpl(ref.watch(conversationsRemoteDataSourceProvider));
 });
 
-final conversationsProvider = FutureProvider<List<Conversation>>((ref) {
+final conversationsProvider =
+    FutureProvider.autoDispose<List<Conversation>>((ref) {
   return ref.watch(conversationsRepositoryProvider).fetchConversations();
 });
