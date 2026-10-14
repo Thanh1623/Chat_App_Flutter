@@ -3,8 +3,6 @@ import 'package:chat_app/features/chat/presentation/chat_file_format.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
-const _zaloBlue = Color(0xFF0068FF);
-
 class ChatFilePreviewResult {
   const ChatFilePreviewResult({
     required this.files,
@@ -134,7 +132,7 @@ class _ChatFilePreviewSheetState extends State<ChatFilePreviewSheet> {
                     );
                   },
             style: FilledButton.styleFrom(
-              backgroundColor: _zaloBlue,
+              backgroundColor: Theme.of(context).colorScheme.primary,
               padding: const EdgeInsets.symmetric(vertical: 14),
             ),
             child: Text(

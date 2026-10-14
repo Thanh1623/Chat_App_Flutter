@@ -4,8 +4,6 @@ import 'package:chat_app/features/chat/presentation/chat_image_picker_common.dar
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
-const _zaloBlue = Color(0xFF0068FF);
-
 class ChatImagePreviewSheet extends StatefulWidget {
   const ChatImagePreviewSheet({
     super.key,
@@ -172,7 +170,7 @@ class _ChatImagePreviewSheetState extends State<ChatImagePreviewSheet> {
                     );
                   },
             style: FilledButton.styleFrom(
-              backgroundColor: _zaloBlue,
+              backgroundColor: Theme.of(context).colorScheme.primary,
               padding: const EdgeInsets.symmetric(vertical: 14),
             ),
             child: Text(

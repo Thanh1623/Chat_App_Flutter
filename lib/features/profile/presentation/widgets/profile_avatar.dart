@@ -7,12 +7,16 @@ class ProfileAvatar extends StatelessWidget {
     this.avatarUrl,
     this.radius = 40,
     this.onTap,
+    this.badgeBackgroundColor,
+    this.badgeIconColor,
   });
 
   final String displayName;
   final String? avatarUrl;
   final double radius;
   final VoidCallback? onTap;
+  final Color? badgeBackgroundColor;
+  final Color? badgeIconColor;
 
   @override
   Widget build(BuildContext context) {
@@ -42,8 +46,13 @@ class ProfileAvatar extends StatelessWidget {
             bottom: 0,
             child: CircleAvatar(
               radius: 16,
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              child: const Icon(Icons.camera_alt, size: 16, color: Colors.white),
+              backgroundColor: badgeBackgroundColor ??
+                  Theme.of(context).colorScheme.primary,
+              child: Icon(
+                Icons.camera_alt,
+                size: 16,
+                color: badgeIconColor ?? Colors.white,
+              ),
             ),
           ),
       ],

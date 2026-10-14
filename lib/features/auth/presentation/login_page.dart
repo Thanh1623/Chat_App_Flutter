@@ -2,8 +2,6 @@ import 'package:chat_app/features/auth/presentation/providers/auth_controller.da
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-const _zaloBlue = Color(0xFF0068FF);
-
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
 
@@ -38,6 +36,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   @override
   Widget build(BuildContext context) {
     final auth = ref.watch(authControllerProvider);
+    final primary = Theme.of(context).colorScheme.primary;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -108,7 +107,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     height: 48,
                     child: FilledButton(
                       style: FilledButton.styleFrom(
-                        backgroundColor: _zaloBlue,
+                        backgroundColor: primary,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -136,9 +135,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     onPressed: () {
                       // chưa có route — chỉ UI
                     },
-                    child: const Text(
+                    child: Text(
                       'Lấy lại mật khẩu',
-                      style: TextStyle(color: _zaloBlue),
+                      style: TextStyle(color: primary),
                     ),
                   ),
                   const Spacer(),
@@ -160,7 +159,7 @@ class _LoginHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      color: _zaloBlue,
+      color: Theme.of(context).colorScheme.primary,
       padding: EdgeInsets.only(
         top: MediaQuery.paddingOf(context).top + 36,
         bottom: 40,
@@ -204,10 +203,10 @@ class _RegisterHint extends StatelessWidget {
                 onTap: () {
                   // chưa có /register
                 },
-                child: const Text(
+                child: Text(
                   'Đăng ký ngay',
                   style: TextStyle(
-                    color: _zaloBlue,
+                    color: Theme.of(context).colorScheme.primary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),

@@ -10,8 +10,6 @@ import 'package:chat_app/features/conversations/presentation/providers/conversat
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-const _zaloBlue = Color(0xFF0068FF);
-
 class ChatPage extends ConsumerStatefulWidget {
   const ChatPage({
     super.key,
@@ -115,6 +113,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   Widget build(BuildContext context) {
     final myId = ref.watch(sessionStorageProvider).user?.id;
     final roomId = widget.conversationId;
+    final primary = Theme.of(context).colorScheme.primary;
 
     return PopScope(
       onPopInvokedWithResult: (didPop, _) {
@@ -123,10 +122,10 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         }
       },
       child: Scaffold(
-      backgroundColor: const Color(0xFFE8F3FF),
+      backgroundColor: primary.withValues(alpha: 0.08),
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
-        backgroundColor: _zaloBlue,
+        backgroundColor: primary,
         foregroundColor: Colors.white,
         title: Text(widget.title ?? 'Chat'),
         actions: [
@@ -259,6 +258,7 @@ class _MessageBubble extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 4),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: isMine
                 ? CrossAxisAlignment.end
                 : CrossAxisAlignment.start,
@@ -295,8 +295,9 @@ class _BubbleBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
     final bg = isMine
-        ? _zaloBlue
+        ? primary
         : message.isAgent
             ? const Color(0xFFFFF3E0)
             : Colors.white;
@@ -324,7 +325,7 @@ class _BubbleBody extends StatelessWidget {
           bottomRight: Radius.circular(isMine ? 4 : 16),
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+          crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
             if (fileUrl.isNotEmpty)
@@ -337,48 +338,53 @@ class _BubbleBody extends StatelessWidget {
                       horizontal: 12,
                       vertical: 10,
                     ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.insert_drive_file,
-                          color: isMine ? Colors.white : _zaloBlue,
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                message.fileName?.trim().isNotEmpty == true
-                                    ? message.fileName!.trim()
-                                    : 'Tệp đính kèm',
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  color: isMine ? Colors.white : Colors.black87,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              if (message.fileSizeBytes != null &&
-                                  message.fileSizeBytes! > 0)
+                    child: SizedBox(
+                      width: MediaQuery.sizeOf(context).width * 0.62,
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.insert_drive_file,
+                            color: isMine ? Colors.white : primary,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
                                 Text(
-                                  formatFileSize(message.fileSizeBytes!),
+                                  message.fileName?.trim().isNotEmpty == true
+                                      ? message.fileName!.trim()
+                                      : 'Tệp đính kèm',
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
-                                    fontSize: 11,
-                                    color: isMine
-                                        ? Colors.white70
-                                        : Colors.black54,
+                                    color:
+                                        isMine ? Colors.white : Colors.black87,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
-                            ],
+                                if (message.fileSizeBytes != null &&
+                                    message.fileSizeBytes! > 0)
+                                  Text(
+                                    formatFileSize(message.fileSizeBytes!),
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: isMine
+                                          ? Colors.white70
+                                          : Colors.black54,
+                                    ),
+                                  ),
+                              ],
+                            ),
                           ),
-                        ),
-                        Icon(
-                          Icons.open_in_new,
-                          size: 18,
-                          color: isMine ? Colors.white70 : Colors.black45,
-                        ),
-                      ],
+                          Icon(
+                            Icons.open_in_new,
+                            size: 18,
+                            color: isMine ? Colors.white70 : Colors.black45,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -406,14 +412,12 @@ class _BubbleBody extends StatelessWidget {
                 ),
               ),
             if (hasText)
-              ColoredBox(
-                color: bg,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-                  child: Text(
-                    message.content,
-                    style: TextStyle(color: textColor),
-                  ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+                child: Text(
+                  message.content,
+                  style: TextStyle(color: textColor, height: 1.35),
+                  softWrap: true,
                 ),
               ),
           ],
@@ -465,6 +469,7 @@ class _MessageComposer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
     return SafeArea(
       top: false,
       child: ColoredBox(
@@ -475,12 +480,12 @@ class _MessageComposer extends StatelessWidget {
             children: [
               IconButton(
                 onPressed: sending ? null : onPickImage,
-                icon: const Icon(Icons.image_outlined, color: _zaloBlue),
+                icon: Icon(Icons.image_outlined, color: primary),
                 tooltip: 'Gửi ảnh',
               ),
               IconButton(
                 onPressed: sending ? null : onPickFile,
-                icon: const Icon(Icons.attach_file, color: _zaloBlue),
+                icon: Icon(Icons.attach_file, color: primary),
                 tooltip: 'Gửi tệp',
               ),
               Expanded(
@@ -522,7 +527,7 @@ class _MessageComposer extends StatelessWidget {
                         height: 20,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Icon(Icons.send, color: _zaloBlue),
+                    : Icon(Icons.send, color: primary),
               ),
             ],
           ),
