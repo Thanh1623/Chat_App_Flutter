@@ -1,5 +1,7 @@
 import 'package:chat_app/core/network/api_endpoints.dart';
+import 'package:chat_app/core/network/image_multipart.dart';
 import 'package:chat_app/features/chat/data/models/message_model.dart';
+import 'package:chat_app/features/chat/data/models/room_image_model.dart';
 import 'package:dio/dio.dart';
 
 class ChatRemoteDataSource {
@@ -18,12 +20,47 @@ class ChatRemoteDataSource {
         .toList();
   }
 
-  Future<MessageModel> sendMessage(String roomId, String content) async {
+  Future<MessageModel> sendMessage(
+    String roomId, {
+    String? content,
+    String? imageId,
+  }) async {
+    final data = <String, dynamic>{};
+    final text = content?.trim() ?? '';
+    if (text.isNotEmpty) {
+      data['content'] = text;
+    }
+    if (imageId != null && imageId.isNotEmpty) {
+      data['imageId'] = imageId;
+    }
     final response = await _dio.post<Map<String, dynamic>>(
       ApiEndpoints.conversationMessages(roomId),
-      data: {'content': content},
+      data: data,
     );
     return MessageModel.fromJson(response.data ?? {});
+  }
+
+  Future<RoomImageModel> uploadRoomImage({
+    required String roomId,
+    required List<int> bytes,
+    required String filename,
+  }) async {
+    final formData = FormData.fromMap({
+      'file': MultipartFile.fromBytes(
+        bytes,
+        filename: filename,
+        contentType: imageMediaTypeFromFilename(filename),
+      ),
+    });
+    final response = await _dio.post<Map<String, dynamic>>(
+      ApiEndpoints.roomImages(roomId),
+      data: formData,
+      options: Options(
+        contentType: 'multipart/form-data',
+        headers: const {'Content-Type': null},
+      ),
+    );
+    return RoomImageModel.fromJson(response.data ?? {});
   }
 
   Future<void> markRead(String roomId, String messageId) async {

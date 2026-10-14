@@ -30,7 +30,37 @@ class ChatRepositoryImpl implements ChatRepository {
       throw ArgumentError('Tin nhắn không được trống');
     }
     try {
-      final model = await _remote.sendMessage(roomId, trimmed);
+      final model = await _remote.sendMessage(roomId, content: trimmed);
+      return model.toEntity();
+    } catch (e) {
+      throw mapException(e);
+    }
+  }
+
+  @override
+  Future<ChatMessage> sendImageMessage(
+    String roomId, {
+    required List<int> bytes,
+    required String filename,
+    String? caption,
+  }) async {
+    if (bytes.isEmpty) {
+      throw ArgumentError('Ảnh trống');
+    }
+    try {
+      final uploaded = await _remote.uploadRoomImage(
+        roomId: roomId,
+        bytes: bytes,
+        filename: filename,
+      );
+      if (uploaded.id.isEmpty) {
+        throw StateError('Upload ảnh không trả id');
+      }
+      final model = await _remote.sendMessage(
+        roomId,
+        content: caption,
+        imageId: uploaded.id,
+      );
       return model.toEntity();
     } catch (e) {
       throw mapException(e);

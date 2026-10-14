@@ -1,6 +1,7 @@
 import 'package:chat_app/core/storage/session_storage.dart';
 import 'package:chat_app/core/widgets/error_view.dart';
 import 'package:chat_app/features/chat/domain/entities/chat_message.dart';
+import 'package:chat_app/features/chat/presentation/chat_image_send.dart';
 import 'package:chat_app/features/chat/presentation/providers/chat_controller.dart';
 import 'package:chat_app/features/conversations/presentation/providers/conversations_provider.dart';
 import 'package:flutter/material.dart';
@@ -42,6 +43,19 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     await ref
         .read(chatControllerProvider(widget.conversationId).notifier)
         .send(text);
+  }
+
+  Future<void> _pickImage() async {
+    final caption = _composer.text.trim();
+    if (caption.isNotEmpty) {
+      _composer.clear();
+    }
+    await pickAndSendChatImage(
+      context,
+      ref,
+      widget.conversationId,
+      caption: caption.isEmpty ? null : caption,
+    );
   }
 
   Future<void> _confirmDeleteGroup() async {
@@ -151,6 +165,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                     focusNode: _composerFocus,
                     sending: chat.isSending,
                     onSend: _send,
+                    onPickImage: _pickImage,
                   ),
                 ],
               );
@@ -239,33 +254,7 @@ class _MessageBubble extends StatelessWidget {
                     style: const TextStyle(fontSize: 11, color: Colors.black54),
                   ),
                 ),
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  color: isMine
-                      ? _zaloBlue
-                      : message.isAgent
-                      ? const Color(0xFFFFF3E0)
-                      : Colors.white,
-                  borderRadius: BorderRadius.only(
-                    topLeft: const Radius.circular(16),
-                    topRight: const Radius.circular(16),
-                    bottomLeft: Radius.circular(isMine ? 16 : 4),
-                    bottomRight: Radius.circular(isMine ? 4 : 16),
-                  ),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  child: Text(
-                    message.content,
-                    style: TextStyle(
-                      color: isMine ? Colors.white : Colors.black87,
-                    ),
-                  ),
-                ),
-              ),
+              _BubbleBody(message: message, isMine: isMine),
               Padding(
                 padding: const EdgeInsets.only(top: 2, left: 4, right: 4),
                 child: Text(
@@ -281,18 +270,110 @@ class _MessageBubble extends StatelessWidget {
   }
 }
 
+class _BubbleBody extends StatelessWidget {
+  const _BubbleBody({required this.message, required this.isMine});
+
+  final ChatMessage message;
+  final bool isMine;
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = isMine
+        ? _zaloBlue
+        : message.isAgent
+            ? const Color(0xFFFFF3E0)
+            : Colors.white;
+    final textColor = isMine ? Colors.white : Colors.black87;
+    final hasText = message.content.trim().isNotEmpty;
+    final url = message.imageUrl?.trim() ?? '';
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: message.hasImage && !hasText ? Colors.white : bg,
+        borderRadius: BorderRadius.only(
+          topLeft: const Radius.circular(16),
+          topRight: const Radius.circular(16),
+          bottomLeft: Radius.circular(isMine ? 16 : 4),
+          bottomRight: Radius.circular(isMine ? 4 : 16),
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.only(
+          topLeft: const Radius.circular(16),
+          topRight: const Radius.circular(16),
+          bottomLeft: Radius.circular(isMine ? 16 : 4),
+          bottomRight: Radius.circular(isMine ? 4 : 16),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (url.isNotEmpty)
+              GestureDetector(
+                onTap: () => _openImage(context, url),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 260),
+                  child: Image.network(
+                    url,
+                    fit: BoxFit.cover,
+                    loadingBuilder: (context, child, progress) {
+                      if (progress == null) return child;
+                      return const SizedBox(
+                        height: 160,
+                        child: Center(child: CircularProgressIndicator()),
+                      );
+                    },
+                    errorBuilder: (_, _, _) => const SizedBox(
+                      height: 120,
+                      child: Center(child: Icon(Icons.broken_image_outlined)),
+                    ),
+                  ),
+                ),
+              ),
+            if (hasText)
+              ColoredBox(
+                color: bg,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+                  child: Text(
+                    message.content,
+                    style: TextStyle(color: textColor),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _openImage(BuildContext context, String url) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => Dialog(
+        insetPadding: const EdgeInsets.all(16),
+        child: InteractiveViewer(
+          child: Image.network(url, fit: BoxFit.contain),
+        ),
+      ),
+    );
+  }
+}
+
 class _MessageComposer extends StatelessWidget {
   const _MessageComposer({
     required this.controller,
     required this.focusNode,
     required this.sending,
     required this.onSend,
+    required this.onPickImage,
   });
 
   final TextEditingController controller;
   final FocusNode focusNode;
   final bool sending;
   final VoidCallback onSend;
+  final VoidCallback onPickImage;
 
   @override
   Widget build(BuildContext context) {
@@ -304,6 +385,11 @@ class _MessageComposer extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(8, 8, 4, 8),
           child: Row(
             children: [
+              IconButton(
+                onPressed: sending ? null : onPickImage,
+                icon: const Icon(Icons.image_outlined, color: _zaloBlue),
+                tooltip: 'Gửi ảnh',
+              ),
               Expanded(
                 child: TextField(
                   controller: controller,

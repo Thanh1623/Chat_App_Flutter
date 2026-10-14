@@ -1,4 +1,5 @@
 import 'package:chat_app/core/network/api_endpoints.dart';
+import 'package:chat_app/core/network/image_multipart.dart';
 import 'package:chat_app/features/auth/data/models/login_response.dart';
 import 'package:chat_app/features/auth/domain/entities/user.dart';
 import 'package:dio/dio.dart';
@@ -58,19 +59,6 @@ class AuthRemoteDataSource {
     return LoginResponse.fromJson(response.data ?? {});
   }
 
-  static DioMediaType? _imageMediaType(String filename) {
-    final lower = filename.toLowerCase();
-    if (lower.endsWith('.png')) return DioMediaType('image', 'png');
-    if (lower.endsWith('.gif')) return DioMediaType('image', 'gif');
-    if (lower.endsWith('.webp')) return DioMediaType('image', 'webp');
-    if (lower.endsWith('.jpg') ||
-        lower.endsWith('.jpeg') ||
-        !lower.contains('.')) {
-      return DioMediaType('image', 'jpeg');
-    }
-    return null;
-  }
-
   Future<LoginResponse> uploadAvatar({
     required List<int> bytes,
     required String filename,
@@ -79,7 +67,7 @@ class AuthRemoteDataSource {
       'file': MultipartFile.fromBytes(
         bytes,
         filename: filename,
-        contentType: _imageMediaType(filename),
+        contentType: imageMediaTypeFromFilename(filename),
       ),
     });
     final response = await _dio.post<Map<String, dynamic>>(

@@ -9,6 +9,8 @@ class MessageModel {
     required this.content,
     required this.createdAt,
     this.userId,
+    this.imageId,
+    this.imageUrl,
   });
 
   final String id;
@@ -18,6 +20,8 @@ class MessageModel {
   final String role;
   final String content;
   final DateTime createdAt;
+  final String? imageId;
+  final String? imageUrl;
 
   ChatMessage toEntity() => ChatMessage(
         id: id,
@@ -27,6 +31,8 @@ class MessageModel {
         role: role,
         content: content,
         createdAt: createdAt,
+        imageId: imageId,
+        imageUrl: imageUrl,
       );
 
   factory MessageModel.fromJson(Map<String, dynamic> json) {
@@ -37,6 +43,8 @@ class MessageModel {
       authorName: json['authorName']?.toString() ?? '',
       role: json['role']?.toString() ?? 'user',
       content: json['content']?.toString() ?? '',
+      imageId: json['imageId']?.toString(),
+      imageUrl: json['imageUrl']?.toString(),
       createdAt: DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
           DateTime.now(),
     );

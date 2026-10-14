@@ -7,6 +7,8 @@ class ChatMessage {
     required this.content,
     required this.createdAt,
     this.userId,
+    this.imageId,
+    this.imageUrl,
   });
 
   final String id;
@@ -16,6 +18,12 @@ class ChatMessage {
   final String role;
   final String content;
   final DateTime createdAt;
+  final String? imageId;
+  final String? imageUrl;
 
   bool get isAgent => role == 'agent';
+  bool get hasImage {
+    final url = imageUrl?.trim() ?? '';
+    return url.isNotEmpty;
+  }
 }

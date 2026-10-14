@@ -107,6 +107,55 @@ class ChatController extends ChangeNotifier {
     }
   }
 
+  String? _optionalCaption(String? caption) {
+    final text = caption?.trim() ?? '';
+    return text.isEmpty ? null : text;
+  }
+
+  Future<void> sendImage({
+    required List<int> bytes,
+    required String filename,
+    String? caption,
+  }) async {
+    await sendImages(
+      items: [(bytes: bytes, filename: filename)],
+      caption: caption,
+    );
+  }
+
+  Future<void> sendImages({
+    required List<({List<int> bytes, String filename})> items,
+    String? caption,
+  }) async {
+    if (items.isEmpty) return;
+    _sending = true;
+    _error = null;
+    notifyListeners();
+    try {
+      for (final item in items) {
+        final sent = await _repo.sendImageMessage(
+          roomId,
+          bytes: item.bytes,
+          filename: item.filename,
+        );
+        _addIfNew(sent);
+      }
+      final text = _optionalCaption(caption);
+      if (text != null) {
+        final sent = await _repo.sendMessage(roomId, text);
+        _addIfNew(sent);
+      }
+      await _markLatestRead();
+    } on Failure catch (e) {
+      _error = e.message;
+    } catch (e) {
+      _error = e.toString();
+    } finally {
+      _sending = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> _markLatestRead() async {
     if (_messages.isEmpty) return;
     final latest = _messages.first;
