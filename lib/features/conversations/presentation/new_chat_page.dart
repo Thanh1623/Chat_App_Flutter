@@ -45,7 +45,7 @@ class _NewChatPageState extends ConsumerState<NewChatPage> {
       final repo = ref.read(conversationsRepositoryProvider);
       final conv = await repo.openDirect(user.id);
       if (!mounted) return;
-      ref.invalidate(conversationsProvider);
+      ref.read(conversationsInboxProvider.notifier).refreshInbox();
       context.push(
         AppRoutes.chatPath(conv.id),
         extra: ChatRouteArgs(title: conv.title),
@@ -78,7 +78,7 @@ class _NewChatPageState extends ConsumerState<NewChatPage> {
         memberIds: _selected.toList(),
       );
       if (!mounted) return;
-      ref.invalidate(conversationsProvider);
+      ref.read(conversationsInboxProvider.notifier).refreshInbox();
       context.push(
         AppRoutes.chatPath(conv.id),
         extra: ChatRouteArgs(title: conv.title, canDelete: conv.canDelete),

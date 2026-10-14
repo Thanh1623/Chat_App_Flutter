@@ -28,7 +28,7 @@ final conversationsInboxSyncProvider = Provider<void>((ref) {
   final sub = socket.messages.listen((_) {
     debounce?.cancel();
     debounce = Timer(const Duration(milliseconds: 500), () {
-      ref.invalidate(conversationsProvider);
+      ref.read(conversationsInboxProvider.notifier).refreshInbox();
     });
   });
 
@@ -39,8 +39,8 @@ final conversationsInboxSyncProvider = Provider<void>((ref) {
     }
   }
 
-  ref.listen(conversationsProvider, (previous, next) {
-    next.whenData(joinRooms);
+  ref.listen(conversationsInboxProvider, (previous, next) {
+    next.whenData((state) => joinRooms(state.items));
   }, fireImmediately: true);
 
   ref.onDispose(() {

@@ -98,7 +98,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       await ref
           .read(conversationsRepositoryProvider)
           .deleteRoom(widget.conversationId);
-      ref.invalidate(conversationsProvider);
+      ref.read(conversationsInboxProvider.notifier).refreshInbox();
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
       if (mounted) {
@@ -118,7 +118,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     return PopScope(
       onPopInvokedWithResult: (didPop, _) {
         if (didPop) {
-          ref.invalidate(conversationsProvider);
+          ref.read(conversationsInboxProvider.notifier).refreshInbox();
         }
       },
       child: Scaffold(

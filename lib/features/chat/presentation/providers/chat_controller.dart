@@ -195,7 +195,7 @@ class ChatController extends ChangeNotifier {
     if (latest.id.isEmpty) return;
     try {
       await _repo.markRead(roomId, latest.id);
-      _ref.invalidate(conversationsProvider);
+      _ref.read(conversationsInboxProvider.notifier).refreshInbox();
     } catch (_) {
       // ponytail: read receipt không chặn chat
     }

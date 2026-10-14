@@ -12,7 +12,7 @@ class MainShell extends ConsumerWidget {
 
   void _onTap(WidgetRef ref, int index) {
     if (index == 0 || index == 1) {
-      ref.invalidate(conversationsProvider);
+      ref.read(conversationsInboxProvider.notifier).refreshInbox();
     }
     navigationShell.goBranch(
       index,

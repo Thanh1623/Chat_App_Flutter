@@ -36,7 +36,8 @@ class JoinedGroupsPage extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => ErrorView(
           message: e.toString(),
-          onRetry: () => ref.invalidate(conversationsProvider),
+          onRetry: () =>
+              ref.read(conversationsInboxProvider.notifier).refreshInbox(),
         ),
         data: (items) {
           final groups =
