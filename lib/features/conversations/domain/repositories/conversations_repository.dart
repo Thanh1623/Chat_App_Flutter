@@ -1,3 +1,4 @@
+import 'package:chat_app/features/contacts/domain/entities/contact_user.dart';
 import 'package:chat_app/features/conversations/domain/entities/conversation.dart';
 import 'package:chat_app/features/conversations/domain/entities/conversations_page.dart';
 
@@ -15,4 +16,6 @@ abstract interface class ConversationsRepository {
   });
 
   Future<void> deleteRoom(String roomId);
+
+  Future<List<ContactUser>> fetchRoomMembers(String roomId);
 }

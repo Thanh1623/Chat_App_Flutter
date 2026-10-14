@@ -1,5 +1,7 @@
 import 'package:chat_app/core/network/api_endpoints.dart';
 import 'package:chat_app/features/conversations/data/models/conversation_model.dart';
+import 'package:chat_app/features/contacts/data/models/contact_user_model.dart';
+import 'package:chat_app/features/contacts/domain/entities/contact_user.dart';
 import 'package:chat_app/features/conversations/domain/entities/conversation.dart';
 import 'package:chat_app/features/conversations/domain/entities/conversations_page.dart';
 import 'package:dio/dio.dart';
@@ -26,7 +28,7 @@ class ConversationsRemoteDataSource {
           .whereType<Map<String, dynamic>>()
           .map(ConversationModel.fromJson)
           .map((m) => m.toEntity())
-          .where(_hasConversationMessage)
+          .where(_includeInInbox)
           .toList();
       return ConversationsPage(items: items, hasMore: false);
     }
@@ -41,7 +43,7 @@ class ConversationsRemoteDataSource {
         .whereType<Map<String, dynamic>>()
         .map(ConversationModel.fromJson)
         .map((m) => m.toEntity())
-        .where(_hasConversationMessage)
+        .where(_includeInInbox)
         .toList();
 
     var hasMore = false;
@@ -61,8 +63,20 @@ class ConversationsRemoteDataSource {
     );
   }
 
-  bool _hasConversationMessage(Conversation conversation) {
+  bool _includeInInbox(Conversation conversation) {
+    if (conversation.type == ConversationType.group) return true;
     return conversation.lastMessagePreview.trim().isNotEmpty;
+  }
+
+  Future<List<ContactUser>> fetchRoomMembers(String roomId) async {
+    final response =
+        await _dio.get<List<dynamic>>(ApiEndpoints.roomMembers(roomId));
+    final list = response.data ?? [];
+    return list
+        .whereType<Map<String, dynamic>>()
+        .map(ContactUserModel.fromJson)
+        .map((m) => m.toEntity())
+        .toList();
   }
 
   Future<ConversationModel> openDirect(String userId) async {

@@ -1,5 +1,6 @@
 import 'package:chat_app/core/error/exception_mapper.dart';
 import 'package:chat_app/features/conversations/data/datasources/conversations_remote_data_source.dart';
+import 'package:chat_app/features/contacts/domain/entities/contact_user.dart';
 import 'package:chat_app/features/conversations/domain/entities/conversation.dart';
 import 'package:chat_app/features/conversations/domain/entities/conversations_page.dart';
 import 'package:chat_app/features/conversations/domain/repositories/conversations_repository.dart';
@@ -51,6 +52,15 @@ class ConversationsRepositoryImpl implements ConversationsRepository {
   Future<void> deleteRoom(String roomId) async {
     try {
       await _remote.deleteRoom(roomId);
+    } catch (e) {
+      throw mapException(e);
+    }
+  }
+
+  @override
+  Future<List<ContactUser>> fetchRoomMembers(String roomId) async {
+    try {
+      return await _remote.fetchRoomMembers(roomId);
     } catch (e) {
       throw mapException(e);
     }

@@ -5,10 +5,12 @@ import 'package:chat_app/features/auth/presentation/login_page.dart';
 import 'package:chat_app/features/auth/presentation/providers/auth_controller.dart';
 import 'package:chat_app/features/chat/presentation/chat_page.dart';
 import 'package:chat_app/features/contacts/presentation/joined_groups_page.dart';
+import 'package:chat_app/features/conversations/domain/entities/conversation.dart';
 import 'package:chat_app/features/conversations/presentation/conversations_page.dart';
 import 'package:chat_app/features/conversations/presentation/new_chat_page.dart';
 import 'package:chat_app/features/profile/presentation/edit_profile_page.dart';
 import 'package:chat_app/features/profile/presentation/profile_page.dart';
+import 'package:chat_app/features/profile/presentation/user_profile_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -88,6 +90,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
+        path: AppRoutes.userProfile,
+        builder: (context, state) {
+          final userId = state.pathParameters['userId']!;
+          return UserProfilePage(userId: userId);
+        },
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
         path: AppRoutes.chat,
         builder: (context, state) {
           final id = state.pathParameters['conversationId']!;
@@ -97,6 +107,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               conversationId: id,
               title: extra.title,
               canDelete: extra.canDelete,
+              isGroup: extra.type == ConversationType.group,
+              peerUserId: extra.peerUserId,
             );
           }
           final title = extra is String ? extra : null;

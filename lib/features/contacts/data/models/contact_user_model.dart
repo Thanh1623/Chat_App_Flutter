@@ -26,7 +26,9 @@ class ContactUserModel {
   factory ContactUserModel.fromJson(Map<String, dynamic> json) {
     return ContactUserModel(
       id: json['id']?.toString() ?? '',
-      name: json['name']?.toString() ?? '',
+      name: json['displayName']?.toString() ??
+          json['name']?.toString() ??
+          '',
       email: json['email']?.toString() ?? '',
       avatarUrl: json['avatarUrl']?.toString() ?? '',
       team: json['team']?.toString() ?? '',

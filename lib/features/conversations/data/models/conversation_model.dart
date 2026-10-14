@@ -9,6 +9,7 @@ class ConversationModel {
     required this.updatedAt,
     this.unreadCount = 0,
     this.canDelete = false,
+    this.peerUserId,
   });
 
   final String id;
@@ -18,6 +19,7 @@ class ConversationModel {
   final DateTime updatedAt;
   final int unreadCount;
   final bool canDelete;
+  final String? peerUserId;
 
   Conversation toEntity() => Conversation(
     id: id,
@@ -27,6 +29,7 @@ class ConversationModel {
     updatedAt: updatedAt,
     unreadCount: unreadCount,
     canDelete: canDelete,
+    peerUserId: peerUserId,
   );
 
   static String _lastMessagePreviewFromJson(Map<String, dynamic> json) {
@@ -57,6 +60,7 @@ class ConversationModel {
           DateTime.now(),
       unreadCount: (json['unreadCount'] as num?)?.toInt() ?? 0,
       canDelete: json['canDelete'] == true,
+      peerUserId: json['peerUserId']?.toString(),
     );
   }
 }

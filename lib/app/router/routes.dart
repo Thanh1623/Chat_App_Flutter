@@ -7,6 +7,9 @@ abstract final class AppRoutes {
   static const chat = '/chat/:conversationId';
   static const settings = '/me';
   static const newChat = '/new-chat';
+  static const userProfile = '/users/:userId';
 
   static String chatPath(String conversationId) => '/chat/$conversationId';
+
+  static String userProfilePath(String userId) => '/users/$userId';
 }

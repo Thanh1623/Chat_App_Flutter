@@ -14,6 +14,8 @@ abstract final class ApiEndpoints {
   static const health = '/health';
 
   static const users = '/users';
+  static String user(String id) => '/users/$id';
+  static String roomMembers(String roomId) => '/rooms/$roomId/members';
   static const roomsDirect = '/rooms/direct';
   static const createRoom = '/rooms'; // POST
   static String deleteRoom(String id) => '/rooms/$id';

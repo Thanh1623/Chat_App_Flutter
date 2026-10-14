@@ -48,7 +48,11 @@ class _NewChatPageState extends ConsumerState<NewChatPage> {
       ref.read(conversationsInboxProvider.notifier).refreshInbox();
       context.push(
         AppRoutes.chatPath(conv.id),
-        extra: ChatRouteArgs(title: conv.title),
+        extra: ChatRouteArgs(
+          title: conv.title,
+          type: conv.type,
+          peerUserId: conv.peerUserId,
+        ),
       );
     } catch (e) {
       if (mounted) {
@@ -81,7 +85,11 @@ class _NewChatPageState extends ConsumerState<NewChatPage> {
       ref.read(conversationsInboxProvider.notifier).refreshInbox();
       context.push(
         AppRoutes.chatPath(conv.id),
-        extra: ChatRouteArgs(title: conv.title, canDelete: conv.canDelete),
+        extra: ChatRouteArgs(
+          title: conv.title,
+          canDelete: conv.canDelete,
+          type: conv.type,
+        ),
       );
     } catch (e) {
       if (mounted) {

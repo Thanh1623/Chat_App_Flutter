@@ -53,6 +53,8 @@ class ConversationListTile extends StatelessWidget {
         extra: ChatRouteArgs(
           title: conversation.title,
           canDelete: conversation.canDelete,
+          type: conversation.type,
+          peerUserId: conversation.peerUserId,
         ),
       ),
     );

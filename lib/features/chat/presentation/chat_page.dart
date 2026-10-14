@@ -1,4 +1,6 @@
+import 'package:chat_app/app/router/routes.dart';
 import 'package:chat_app/core/storage/session_storage.dart';
+import 'package:chat_app/features/auth/presentation/providers/auth_controller.dart';
 import 'package:chat_app/core/widgets/error_view.dart';
 import 'package:chat_app/features/chat/domain/entities/chat_message.dart';
 import 'package:chat_app/features/chat/presentation/chat_file_format.dart';
@@ -9,6 +11,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:chat_app/features/conversations/presentation/providers/conversations_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 class ChatPage extends ConsumerStatefulWidget {
   const ChatPage({
@@ -16,11 +19,15 @@ class ChatPage extends ConsumerStatefulWidget {
     required this.conversationId,
     this.title,
     this.canDelete = false,
+    this.isGroup = false,
+    this.peerUserId,
   });
 
   final String conversationId;
   final String? title;
   final bool canDelete;
+  final bool isGroup;
+  final String? peerUserId;
 
   @override
   ConsumerState<ChatPage> createState() => _ChatPageState();
@@ -72,6 +79,69 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     );
   }
 
+  void _openUserProfile(String? userId) {
+    final id = userId?.trim() ?? '';
+    if (id.isEmpty) return;
+    context.push(AppRoutes.userProfilePath(id));
+  }
+
+  String? _directPeerUserId() {
+    final fromInbox = ref
+        .read(conversationsInboxProvider)
+        .valueOrNull
+        ?.items
+        .where((c) => c.id == widget.conversationId)
+        .map((c) => c.peerUserId)
+        .whereType<String>();
+    if (fromInbox != null && fromInbox.isNotEmpty) {
+      final id = fromInbox.first.trim();
+      if (id.isNotEmpty) return id;
+    }
+    final fromRoute = widget.peerUserId?.trim();
+    if (fromRoute != null && fromRoute.isNotEmpty) return fromRoute;
+    return null;
+  }
+
+  Future<void> _openDirectPeerProfile() async {
+    if (widget.isGroup) return;
+
+    final peerId = _directPeerUserId();
+    if (peerId != null) {
+      _openUserProfile(peerId);
+      return;
+    }
+
+    final myId = ref.read(authControllerProvider).user?.id ??
+        ref.read(sessionStorageProvider).user?.id;
+    final myIdNorm = myId?.trim() ?? '';
+    try {
+      final members = await ref
+          .read(conversationsRepositoryProvider)
+          .fetchRoomMembers(widget.conversationId);
+      if (!mounted) return;
+
+      final others = myIdNorm.isEmpty
+          ? members
+          : members.where((m) => m.id.trim() != myIdNorm).toList();
+      if (others.length == 1) {
+        _openUserProfile(others.first.id);
+        return;
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Không tìm thấy hồ sơ')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString())),
+        );
+      }
+    }
+  }
+
   Future<void> _confirmDeleteGroup() async {
     final ok = await showDialog<bool>(
       context: context,
@@ -114,6 +184,17 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     final myId = ref.watch(sessionStorageProvider).user?.id;
     final roomId = widget.conversationId;
     final primary = Theme.of(context).colorScheme.primary;
+    final inboxMatches = ref
+        .watch(conversationsInboxProvider)
+        .valueOrNull
+        ?.items
+        .where((c) => c.id == roomId);
+    final inboxTitle =
+        inboxMatches == null || inboxMatches.isEmpty ? null : inboxMatches.first.title;
+    final appBarTitle = (inboxTitle?.trim().isNotEmpty == true
+            ? inboxTitle
+            : widget.title)
+        ?.trim();
 
     return PopScope(
       onPopInvokedWithResult: (didPop, _) {
@@ -127,8 +208,19 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       appBar: AppBar(
         backgroundColor: primary,
         foregroundColor: Colors.white,
-        title: Text(widget.title ?? 'Chat'),
+        title: InkWell(
+          onTap: widget.isGroup ? null : _openDirectPeerProfile,
+          child: Text(
+            appBarTitle?.isNotEmpty == true ? appBarTitle! : 'Chat',
+          ),
+        ),
         actions: [
+          if (!widget.isGroup)
+            IconButton(
+              tooltip: 'Xem hồ sơ',
+              onPressed: _openDirectPeerProfile,
+              icon: const Icon(Icons.person_outline),
+            ),
           if (widget.canDelete)
             PopupMenuButton<String>(
               icon: const Icon(Icons.more_vert),
@@ -153,6 +245,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                 return _MessageList(
                   chat: chat,
                   myId: myId,
+                  showSenderNames: widget.isGroup,
+                  onOpenSenderProfile: _openUserProfile,
                   onRetry: () =>
                       ref.read(chatControllerProvider(roomId).notifier).load(),
                 );
@@ -198,11 +292,15 @@ class _MessageList extends StatelessWidget {
   const _MessageList({
     required this.chat,
     required this.myId,
+    required this.showSenderNames,
+    required this.onOpenSenderProfile,
     required this.onRetry,
   });
 
   final ChatController chat;
   final String? myId;
+  final bool showSenderNames;
+  final void Function(String userId) onOpenSenderProfile;
   final VoidCallback onRetry;
 
   @override
@@ -227,6 +325,8 @@ class _MessageList extends StatelessWidget {
           key: ValueKey(message.id),
           message: message,
           isMine: myId != null && message.userId == myId,
+          showSenderName: showSenderNames,
+          onOpenSenderProfile: onOpenSenderProfile,
         );
       },
     );
@@ -238,10 +338,14 @@ class _MessageBubble extends StatelessWidget {
     super.key,
     required this.message,
     required this.isMine,
+    required this.showSenderName,
+    required this.onOpenSenderProfile,
   });
 
   final ChatMessage message;
   final bool isMine;
+  final bool showSenderName;
+  final void Function(String userId) onOpenSenderProfile;
 
   @override
   Widget build(BuildContext context) {
@@ -263,12 +367,26 @@ class _MessageBubble extends StatelessWidget {
                 ? CrossAxisAlignment.end
                 : CrossAxisAlignment.start,
             children: [
-              if (!isMine)
+              if (showSenderName && !isMine)
                 Padding(
                   padding: const EdgeInsets.only(left: 4, bottom: 2),
-                  child: Text(
-                    message.authorName,
-                    style: const TextStyle(fontSize: 11, color: Colors.black54),
+                  child: InkWell(
+                    onTap: () => onOpenSenderProfile(message.userId ?? ''),
+                    borderRadius: BorderRadius.circular(4),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 2,
+                        vertical: 1,
+                      ),
+                      child: Text(
+                        message.authorName,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               _BubbleBody(message: message, isMine: isMine),

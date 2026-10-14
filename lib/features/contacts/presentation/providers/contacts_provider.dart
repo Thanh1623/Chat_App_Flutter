@@ -14,3 +14,11 @@ final contactSearchProvider =
       .searchUsers(query)
       .then((models) => models.map((m) => m.toEntity()).toList());
 });
+
+final userProfileProvider =
+    FutureProvider.autoDispose.family<ContactUser, String>((ref, userId) {
+  return ref
+      .watch(contactsRemoteDataSourceProvider)
+      .fetchUser(userId)
+      .then((m) => m.toEntity());
+});

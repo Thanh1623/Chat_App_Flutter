@@ -9,6 +9,7 @@ class Conversation {
     required this.updatedAt,
     this.unreadCount = 0,
     this.canDelete = false,
+    this.peerUserId,
   });
 
   final String id;
@@ -18,4 +19,6 @@ class Conversation {
   final DateTime updatedAt;
   final int unreadCount;
   final bool canDelete;
+  /// Người còn lại trong chat 1-1 (do BE tính theo viewer).
+  final String? peerUserId;
 }

@@ -7,6 +7,13 @@ class ContactsRemoteDataSource {
 
   final Dio _dio;
 
+  Future<ContactUserModel> fetchUser(String userId) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      ApiEndpoints.user(userId),
+    );
+    return ContactUserModel.fromJson(response.data ?? {});
+  }
+
   Future<List<ContactUserModel>> searchUsers(String q) async {
     final response = await _dio.get<List<dynamic>>(
       ApiEndpoints.users,
