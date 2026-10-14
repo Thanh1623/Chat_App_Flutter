@@ -29,6 +29,7 @@ class ConversationsPage extends ConsumerWidget {
         ),
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'fab_conversations',
         onPressed: () => context.push(AppRoutes.newChat),
         child: const Icon(Icons.edit_outlined),
       ),

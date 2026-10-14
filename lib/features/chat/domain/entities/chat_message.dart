@@ -9,6 +9,11 @@ class ChatMessage {
     this.userId,
     this.imageId,
     this.imageUrl,
+    this.fileId,
+    this.fileUrl,
+    this.fileName,
+    this.fileMimeType,
+    this.fileSizeBytes,
   });
 
   final String id;
@@ -20,10 +25,20 @@ class ChatMessage {
   final DateTime createdAt;
   final String? imageId;
   final String? imageUrl;
+  final String? fileId;
+  final String? fileUrl;
+  final String? fileName;
+  final String? fileMimeType;
+  final int? fileSizeBytes;
 
   bool get isAgent => role == 'agent';
   bool get hasImage {
     final url = imageUrl?.trim() ?? '';
+    return url.isNotEmpty;
+  }
+
+  bool get hasFile {
+    final url = fileUrl?.trim() ?? '';
     return url.isNotEmpty;
   }
 }

@@ -38,6 +38,34 @@ class ChatRepositoryImpl implements ChatRepository {
   }
 
   @override
+  Future<ChatMessage> sendFileMessage(
+    String roomId, {
+    required List<int> bytes,
+    required String filename,
+  }) async {
+    if (bytes.isEmpty) {
+      throw ArgumentError('Tệp trống');
+    }
+    try {
+      final uploaded = await _remote.uploadRoomFile(
+        roomId: roomId,
+        bytes: bytes,
+        filename: filename,
+      );
+      if (uploaded.id.isEmpty) {
+        throw StateError('Upload tệp không trả id');
+      }
+      final model = await _remote.sendMessage(
+        roomId,
+        fileId: uploaded.id,
+      );
+      return model.toEntity();
+    } catch (e) {
+      throw mapException(e);
+    }
+  }
+
+  @override
   Future<ChatMessage> sendImageMessage(
     String roomId, {
     required List<int> bytes,

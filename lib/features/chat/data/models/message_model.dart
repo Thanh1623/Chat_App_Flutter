@@ -11,6 +11,11 @@ class MessageModel {
     this.userId,
     this.imageId,
     this.imageUrl,
+    this.fileId,
+    this.fileUrl,
+    this.fileName,
+    this.fileMimeType,
+    this.fileSizeBytes,
   });
 
   final String id;
@@ -22,6 +27,11 @@ class MessageModel {
   final DateTime createdAt;
   final String? imageId;
   final String? imageUrl;
+  final String? fileId;
+  final String? fileUrl;
+  final String? fileName;
+  final String? fileMimeType;
+  final int? fileSizeBytes;
 
   ChatMessage toEntity() => ChatMessage(
         id: id,
@@ -33,6 +43,11 @@ class MessageModel {
         createdAt: createdAt,
         imageId: imageId,
         imageUrl: imageUrl,
+        fileId: fileId,
+        fileUrl: fileUrl,
+        fileName: fileName,
+        fileMimeType: fileMimeType,
+        fileSizeBytes: fileSizeBytes,
       );
 
   factory MessageModel.fromJson(Map<String, dynamic> json) {
@@ -45,6 +60,13 @@ class MessageModel {
       content: json['content']?.toString() ?? '',
       imageId: json['imageId']?.toString(),
       imageUrl: json['imageUrl']?.toString(),
+      fileId: json['fileId']?.toString(),
+      fileUrl: json['fileUrl']?.toString(),
+      fileName: json['fileName']?.toString(),
+      fileMimeType: json['fileMimeType']?.toString(),
+      fileSizeBytes: json['fileSizeBytes'] is num
+          ? (json['fileSizeBytes'] as num).toInt()
+          : int.tryParse(json['fileSizeBytes']?.toString() ?? ''),
       createdAt: DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
           DateTime.now(),
     );

@@ -1,8 +1,11 @@
 import 'package:chat_app/core/storage/session_storage.dart';
 import 'package:chat_app/core/widgets/error_view.dart';
 import 'package:chat_app/features/chat/domain/entities/chat_message.dart';
+import 'package:chat_app/features/chat/presentation/chat_file_format.dart';
+import 'package:chat_app/features/chat/presentation/chat_file_send.dart';
 import 'package:chat_app/features/chat/presentation/chat_image_send.dart';
 import 'package:chat_app/features/chat/presentation/providers/chat_controller.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:chat_app/features/conversations/presentation/providers/conversations_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -51,6 +54,19 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       _composer.clear();
     }
     await pickAndSendChatImage(
+      context,
+      ref,
+      widget.conversationId,
+      caption: caption.isEmpty ? null : caption,
+    );
+  }
+
+  Future<void> _pickFile() async {
+    final caption = _composer.text.trim();
+    if (caption.isNotEmpty) {
+      _composer.clear();
+    }
+    await pickAndSendChatFiles(
       context,
       ref,
       widget.conversationId,
@@ -166,6 +182,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                     sending: chat.isSending,
                     onSend: _send,
                     onPickImage: _pickImage,
+                    onPickFile: _pickFile,
                   ),
                 ],
               );
@@ -286,10 +303,12 @@ class _BubbleBody extends StatelessWidget {
     final textColor = isMine ? Colors.white : Colors.black87;
     final hasText = message.content.trim().isNotEmpty;
     final url = message.imageUrl?.trim() ?? '';
+    final fileUrl = message.fileUrl?.trim() ?? '';
+    final mediaOnly = (message.hasImage || message.hasFile) && !hasText;
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: message.hasImage && !hasText ? Colors.white : bg,
+        color: mediaOnly && message.hasImage ? Colors.white : bg,
         borderRadius: BorderRadius.only(
           topLeft: const Radius.circular(16),
           topRight: const Radius.circular(16),
@@ -308,6 +327,62 @@ class _BubbleBody extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (fileUrl.isNotEmpty)
+              Material(
+                color: isMine ? Colors.white.withValues(alpha: 0.12) : Colors.black12,
+                child: InkWell(
+                  onTap: () => _openFile(context, fileUrl),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.insert_drive_file,
+                          color: isMine ? Colors.white : _zaloBlue,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                message.fileName?.trim().isNotEmpty == true
+                                    ? message.fileName!.trim()
+                                    : 'Tệp đính kèm',
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: isMine ? Colors.white : Colors.black87,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              if (message.fileSizeBytes != null &&
+                                  message.fileSizeBytes! > 0)
+                                Text(
+                                  formatFileSize(message.fileSizeBytes!),
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: isMine
+                                        ? Colors.white70
+                                        : Colors.black54,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        Icon(
+                          Icons.open_in_new,
+                          size: 18,
+                          color: isMine ? Colors.white70 : Colors.black45,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             if (url.isNotEmpty)
               GestureDetector(
                 onTap: () => _openImage(context, url),
@@ -347,6 +422,17 @@ class _BubbleBody extends StatelessWidget {
     );
   }
 
+  Future<void> _openFile(BuildContext context, String url) async {
+    final uri = Uri.tryParse(url);
+    if (uri == null) return;
+    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!ok && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Không mở được tệp')),
+      );
+    }
+  }
+
   void _openImage(BuildContext context, String url) {
     showDialog<void>(
       context: context,
@@ -367,6 +453,7 @@ class _MessageComposer extends StatelessWidget {
     required this.sending,
     required this.onSend,
     required this.onPickImage,
+    required this.onPickFile,
   });
 
   final TextEditingController controller;
@@ -374,6 +461,7 @@ class _MessageComposer extends StatelessWidget {
   final bool sending;
   final VoidCallback onSend;
   final VoidCallback onPickImage;
+  final VoidCallback onPickFile;
 
   @override
   Widget build(BuildContext context) {
@@ -389,6 +477,11 @@ class _MessageComposer extends StatelessWidget {
                 onPressed: sending ? null : onPickImage,
                 icon: const Icon(Icons.image_outlined, color: _zaloBlue),
                 tooltip: 'Gửi ảnh',
+              ),
+              IconButton(
+                onPressed: sending ? null : onPickFile,
+                icon: const Icon(Icons.attach_file, color: _zaloBlue),
+                tooltip: 'Gửi tệp',
               ),
               Expanded(
                 child: TextField(

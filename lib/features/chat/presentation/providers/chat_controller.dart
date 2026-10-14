@@ -123,6 +123,39 @@ class ChatController extends ChangeNotifier {
     );
   }
 
+  Future<void> sendFiles({
+    required List<({List<int> bytes, String filename})> items,
+    String? caption,
+  }) async {
+    if (items.isEmpty) return;
+    _sending = true;
+    _error = null;
+    notifyListeners();
+    try {
+      for (final item in items) {
+        final sent = await _repo.sendFileMessage(
+          roomId,
+          bytes: item.bytes,
+          filename: item.filename,
+        );
+        _addIfNew(sent);
+      }
+      final text = _optionalCaption(caption);
+      if (text != null) {
+        final sent = await _repo.sendMessage(roomId, text);
+        _addIfNew(sent);
+      }
+      await _markLatestRead();
+    } on Failure catch (e) {
+      _error = e.message;
+    } catch (e) {
+      _error = e.toString();
+    } finally {
+      _sending = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> sendImages({
     required List<({List<int> bytes, String filename})> items,
     String? caption,

@@ -9,6 +9,11 @@ abstract interface class ChatRepository {
     required String filename,
     String? caption,
   });
+  Future<ChatMessage> sendFileMessage(
+    String roomId, {
+    required List<int> bytes,
+    required String filename,
+  });
 
   Future<void> markRead(String roomId, String messageId);
 

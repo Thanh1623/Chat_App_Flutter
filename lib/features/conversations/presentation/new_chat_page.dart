@@ -208,6 +208,7 @@ class _NewChatPageState extends ConsumerState<NewChatPage> {
       ),
       floatingActionButton: _groupMode && _selected.isNotEmpty
           ? FloatingActionButton(
+              heroTag: 'fab_new_chat_group',
               onPressed: _busy ? null : _createGroup,
               child: _busy
                   ? const SizedBox(

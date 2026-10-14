@@ -80,6 +80,7 @@ class JoinedGroupsPage extends ConsumerWidget {
         },
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'fab_contacts',
         onPressed: () => context.push(AppRoutes.newChat),
         child: const Icon(Icons.group_add_outlined),
       ),

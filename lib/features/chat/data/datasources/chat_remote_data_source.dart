@@ -1,6 +1,8 @@
 import 'package:chat_app/core/network/api_endpoints.dart';
+import 'package:chat_app/core/network/file_multipart.dart';
 import 'package:chat_app/core/network/image_multipart.dart';
 import 'package:chat_app/features/chat/data/models/message_model.dart';
+import 'package:chat_app/features/chat/data/models/room_file_model.dart';
 import 'package:chat_app/features/chat/data/models/room_image_model.dart';
 import 'package:dio/dio.dart';
 
@@ -24,6 +26,7 @@ class ChatRemoteDataSource {
     String roomId, {
     String? content,
     String? imageId,
+    String? fileId,
   }) async {
     final data = <String, dynamic>{};
     final text = content?.trim() ?? '';
@@ -32,6 +35,9 @@ class ChatRemoteDataSource {
     }
     if (imageId != null && imageId.isNotEmpty) {
       data['imageId'] = imageId;
+    }
+    if (fileId != null && fileId.isNotEmpty) {
+      data['fileId'] = fileId;
     }
     final response = await _dio.post<Map<String, dynamic>>(
       ApiEndpoints.conversationMessages(roomId),
@@ -61,6 +67,29 @@ class ChatRemoteDataSource {
       ),
     );
     return RoomImageModel.fromJson(response.data ?? {});
+  }
+
+  Future<RoomFileModel> uploadRoomFile({
+    required String roomId,
+    required List<int> bytes,
+    required String filename,
+  }) async {
+    final formData = FormData.fromMap({
+      'file': MultipartFile.fromBytes(
+        bytes,
+        filename: filename,
+        contentType: fileMediaTypeFromFilename(filename),
+      ),
+    });
+    final response = await _dio.post<Map<String, dynamic>>(
+      ApiEndpoints.roomFiles(roomId),
+      data: formData,
+      options: Options(
+        contentType: 'multipart/form-data',
+        headers: const {'Content-Type': null},
+      ),
+    );
+    return RoomFileModel.fromJson(response.data ?? {});
   }
 
   Future<void> markRead(String roomId, String messageId) async {
