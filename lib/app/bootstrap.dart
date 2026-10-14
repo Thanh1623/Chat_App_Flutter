@@ -7,8 +7,6 @@ import 'package:flutter/material.dart';
 typedef AppBuilder = Widget Function();
 
 Future<void> bootstrap(AppBuilder builder) async {
-  WidgetsFlutterBinding.ensureInitialized();
-
   Env.load();
 
   FlutterError.onError = (details) {
@@ -18,8 +16,9 @@ Future<void> bootstrap(AppBuilder builder) async {
     }
   };
 
-  await runZonedGuarded(
-    () async {
+  runZonedGuarded(
+    () {
+      WidgetsFlutterBinding.ensureInitialized();
       runApp(builder());
     },
     (error, stack) {

@@ -7,6 +7,7 @@ import 'package:chat_app/features/chat/presentation/chat_page.dart';
 import 'package:chat_app/features/contacts/presentation/joined_groups_page.dart';
 import 'package:chat_app/features/conversations/presentation/conversations_page.dart';
 import 'package:chat_app/features/conversations/presentation/new_chat_page.dart';
+import 'package:chat_app/features/profile/presentation/edit_profile_page.dart';
 import 'package:chat_app/features/profile/presentation/profile_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,13 +16,15 @@ import 'package:go_router/go_router.dart';
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
 final appRouterProvider = Provider<GoRouter>((ref) {
-  final auth = ref.watch(authControllerProvider);
+  // ponytail: không watch auth ở đây — mỗi notifyListeners tạo GoRouter mới → shell về tab Tin nhắn
+  final authListenable = ref.read(authControllerProvider.notifier);
 
-  return GoRouter(
+  final router = GoRouter(
     navigatorKey: _rootNavigatorKey,
     initialLocation: AppRoutes.login,
-    refreshListenable: auth,
+    refreshListenable: authListenable,
     redirect: (context, state) {
+      final auth = ref.read(authControllerProvider);
       if (auth.isBootstrapping) {
         return null;
       }
@@ -75,6 +78,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
+        path: AppRoutes.editProfile,
+        builder: (context, state) => const EditProfilePage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
         path: AppRoutes.newChat,
         builder: (context, state) => const NewChatPage(),
       ),
@@ -97,4 +105,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
     ],
   );
+
+  ref.onDispose(router.dispose);
+  return router;
 });

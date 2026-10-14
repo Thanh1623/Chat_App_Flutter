@@ -69,4 +69,65 @@ class AuthController extends ChangeNotifier {
     _user = null;
     notifyListeners();
   }
+
+  Future<void> refreshProfile() async {
+    try {
+      _user = await _repo.refreshMe();
+      notifyListeners();
+    } on Failure catch (e) {
+      _error = e.message;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> updateProfile({
+    String? name,
+    String? email,
+    String? password,
+    String? currentPassword,
+  }) async {
+    _loading = true;
+    _error = null;
+    notifyListeners();
+    try {
+      _user = await _repo.updateProfile(
+        name: name,
+        email: email,
+        password: password,
+        currentPassword: currentPassword,
+      );
+      return true;
+    } on Failure catch (e) {
+      _error = e.message;
+      return false;
+    } catch (e) {
+      _error = e.toString();
+      return false;
+    } finally {
+      _loading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<bool> uploadAvatar({
+    required List<int> bytes,
+    required String filename,
+  }) async {
+    _loading = true;
+    _error = null;
+    notifyListeners();
+    try {
+      _user = await _repo.uploadAvatar(bytes: bytes, filename: filename);
+      return true;
+    } on Failure catch (e) {
+      _error = e.message;
+      return false;
+    } catch (e) {
+      _error = e.toString();
+      return false;
+    } finally {
+      _loading = false;
+      notifyListeners();
+    }
+  }
 }

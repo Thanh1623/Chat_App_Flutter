@@ -7,9 +7,9 @@ class LoginResponse {
   final User user;
 
   factory LoginResponse.fromJson(Map<String, dynamic> json) {
-    final token = (json['accessToken'] ??
-            json['access_token'] ??
-            json['token'])
+    final token = (json['token'] ??
+            json['accessToken'] ??
+            json['access_token'])
         ?.toString();
     if (token == null || token.isEmpty) {
       throw FormatException('Login response missing access token');
