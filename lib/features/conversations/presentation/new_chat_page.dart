@@ -1,6 +1,7 @@
 import 'package:chat_app/app/router/chat_route_args.dart';
 import 'package:chat_app/app/router/routes.dart';
 import 'package:chat_app/core/widgets/error_view.dart';
+import 'package:chat_app/features/chat/presentation/widgets/chat_message_avatar.dart';
 import 'package:chat_app/features/contacts/domain/entities/contact_user.dart';
 import 'package:chat_app/features/contacts/presentation/providers/contacts_provider.dart';
 import 'package:chat_app/features/conversations/presentation/providers/conversations_provider.dart';
@@ -186,22 +187,18 @@ class _NewChatPageState extends ConsumerState<NewChatPage> {
                               },
                         title: Text(user.name),
                         subtitle: Text('${user.email} · ${user.team}'),
-                        secondary: CircleAvatar(
-                          child: Text(
-                            user.name.isNotEmpty
-                                ? user.name[0].toUpperCase()
-                                : '?',
-                          ),
+                        secondary: ChatMessageAvatar(
+                          displayName: user.name,
+                          avatarUrl: user.avatarUrl,
+                          radius: 20,
                         ),
                       );
                     }
                     return ListTile(
-                      leading: CircleAvatar(
-                        child: Text(
-                          user.name.isNotEmpty
-                              ? user.name[0].toUpperCase()
-                              : '?',
-                        ),
+                      leading: ChatMessageAvatar(
+                        displayName: user.name,
+                        avatarUrl: user.avatarUrl,
+                        radius: 20,
                       ),
                       title: Text(user.name),
                       subtitle: Text('${user.email} · ${user.team}'),

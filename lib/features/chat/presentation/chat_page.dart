@@ -174,6 +174,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         content: const Text(
           'Toàn bộ tin nhắn trong nhóm sẽ bị xóa. Không thể hoàn tác.',
         ),
+        actionsAlignment: MainAxisAlignment.end,
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -181,6 +182,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(minimumSize: const Size(64, 48)),
             child: const Text('Xóa'),
           ),
         ],
