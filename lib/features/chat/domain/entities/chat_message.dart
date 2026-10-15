@@ -3,6 +3,7 @@ class ChatMessage {
     required this.id,
     required this.roomId,
     required this.authorName,
+    this.authorAvatarUrl = '',
     required this.role,
     required this.content,
     required this.createdAt,
@@ -20,6 +21,7 @@ class ChatMessage {
   final String roomId;
   final String? userId;
   final String authorName;
+  final String authorAvatarUrl;
   final String role;
   final String content;
   final DateTime createdAt;

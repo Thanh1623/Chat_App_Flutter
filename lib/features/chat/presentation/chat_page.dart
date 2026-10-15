@@ -7,6 +7,7 @@ import 'package:chat_app/features/chat/presentation/chat_file_format.dart';
 import 'package:chat_app/features/chat/presentation/chat_file_send.dart';
 import 'package:chat_app/features/chat/presentation/chat_image_send.dart';
 import 'package:chat_app/features/chat/presentation/providers/chat_controller.dart';
+import 'package:chat_app/features/chat/presentation/widgets/chat_message_avatar.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:chat_app/features/conversations/presentation/providers/conversations_provider.dart';
 import 'package:flutter/material.dart';
@@ -36,6 +37,29 @@ class ChatPage extends ConsumerStatefulWidget {
 class _ChatPageState extends ConsumerState<ChatPage> {
   final _composer = TextEditingController();
   final _composerFocus = FocusNode();
+  Map<String, String> _avatarByUserId = const {};
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadMemberAvatars());
+  }
+
+  Future<void> _loadMemberAvatars() async {
+    try {
+      final members = await ref
+          .read(conversationsRepositoryProvider)
+          .fetchRoomMembers(widget.conversationId);
+      if (!mounted) return;
+      setState(() {
+        _avatarByUserId = {
+          for (final m in members) m.id: m.avatarUrl,
+        };
+      });
+    } catch (_) {
+      // ponytail: avatar fallback từ message.authorAvatarUrl
+    }
+  }
 
   @override
   void dispose() {
@@ -242,9 +266,13 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             child: Consumer(
               builder: (context, ref, _) {
                 final chat = ref.watch(chatControllerProvider(roomId));
+                final myAvatar =
+                    ref.watch(authControllerProvider).user?.avatarUrl ?? '';
                 return _MessageList(
                   chat: chat,
                   myId: myId,
+                  myAvatarUrl: myAvatar,
+                  avatarByUserId: _avatarByUserId,
                   showSenderNames: widget.isGroup,
                   onOpenSenderProfile: _openUserProfile,
                   onRetry: () =>
@@ -292,6 +320,8 @@ class _MessageList extends StatelessWidget {
   const _MessageList({
     required this.chat,
     required this.myId,
+    required this.myAvatarUrl,
+    required this.avatarByUserId,
     required this.showSenderNames,
     required this.onOpenSenderProfile,
     required this.onRetry,
@@ -299,6 +329,8 @@ class _MessageList extends StatelessWidget {
 
   final ChatController chat;
   final String? myId;
+  final String myAvatarUrl;
+  final Map<String, String> avatarByUserId;
   final bool showSenderNames;
   final void Function(String userId) onOpenSenderProfile;
   final VoidCallback onRetry;
@@ -321,15 +353,36 @@ class _MessageList extends StatelessWidget {
       itemCount: chat.messages.length,
       itemBuilder: (context, index) {
         final message = chat.messages[index];
+        final isMine = myId != null && message.userId == myId;
         return _MessageBubble(
           key: ValueKey(message.id),
           message: message,
-          isMine: myId != null && message.userId == myId,
+          isMine: isMine,
+          avatarUrl: _resolveAvatarUrl(
+            message: message,
+            isMine: isMine,
+            myAvatarUrl: myAvatarUrl,
+            avatarByUserId: avatarByUserId,
+          ),
           showSenderName: showSenderNames,
           onOpenSenderProfile: onOpenSenderProfile,
         );
       },
     );
+  }
+
+  static String _resolveAvatarUrl({
+    required ChatMessage message,
+    required bool isMine,
+    required String myAvatarUrl,
+    required Map<String, String> avatarByUserId,
+  }) {
+    final fromMessage = message.authorAvatarUrl.trim();
+    if (fromMessage.isNotEmpty) return fromMessage;
+    if (isMine) return myAvatarUrl.trim();
+    final uid = message.userId?.trim() ?? '';
+    if (uid.isEmpty) return '';
+    return avatarByUserId[uid]?.trim() ?? '';
   }
 }
 
@@ -338,12 +391,14 @@ class _MessageBubble extends StatelessWidget {
     super.key,
     required this.message,
     required this.isMine,
+    required this.avatarUrl,
     required this.showSenderName,
     required this.onOpenSenderProfile,
   });
 
   final ChatMessage message;
   final bool isMine;
+  final String avatarUrl;
   final bool showSenderName;
   final void Function(String userId) onOpenSenderProfile;
 
@@ -352,54 +407,73 @@ class _MessageBubble extends StatelessWidget {
     final time = TimeOfDay.fromDateTime(message.createdAt.toLocal());
     final timeLabel =
         '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+    final showAvatar = !isMine && !message.isAgent;
+    final maxBubbleWidth = MediaQuery.sizeOf(context).width * 0.72;
 
-    return Align(
-      alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.sizeOf(context).width * 0.75,
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: isMine
-                ? CrossAxisAlignment.end
-                : CrossAxisAlignment.start,
-            children: [
-              if (showSenderName && !isMine)
-                Padding(
-                  padding: const EdgeInsets.only(left: 4, bottom: 2),
-                  child: InkWell(
-                    onTap: () => onOpenSenderProfile(message.userId ?? ''),
-                    borderRadius: BorderRadius.circular(4),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 2,
-                        vertical: 1,
-                      ),
-                      child: Text(
-                        message.authorName,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: Theme.of(context).colorScheme.primary,
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment:
+            isMine ? MainAxisAlignment.end : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          if (showAvatar) ...[
+            ChatMessageAvatar(
+              displayName: message.authorName,
+              avatarUrl: avatarUrl,
+              onTap: message.userId == null
+                  ? null
+                  : () => onOpenSenderProfile(message.userId!),
+            ),
+            const SizedBox(width: 8),
+          ] else if (!isMine) ...[
+            const SizedBox(width: 40),
+          ],
+          Flexible(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: maxBubbleWidth),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: isMine
+                    ? CrossAxisAlignment.end
+                    : CrossAxisAlignment.start,
+                children: [
+                  if (showSenderName && !isMine)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 4, bottom: 2),
+                      child: InkWell(
+                        onTap: () => onOpenSenderProfile(message.userId ?? ''),
+                        borderRadius: BorderRadius.circular(4),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 2,
+                            vertical: 1,
+                          ),
+                          child: Text(
+                            message.authorName,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
                         ),
                       ),
                     ),
+                  _BubbleBody(message: message, isMine: isMine),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2, left: 4, right: 4),
+                    child: Text(
+                      timeLabel,
+                      style:
+                          const TextStyle(fontSize: 10, color: Colors.black45),
+                    ),
                   ),
-                ),
-              _BubbleBody(message: message, isMine: isMine),
-              Padding(
-                padding: const EdgeInsets.only(top: 2, left: 4, right: 4),
-                child: Text(
-                  timeLabel,
-                  style: const TextStyle(fontSize: 10, color: Colors.black45),
-                ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

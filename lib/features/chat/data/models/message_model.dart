@@ -5,6 +5,7 @@ class MessageModel {
     required this.id,
     required this.roomId,
     required this.authorName,
+    this.authorAvatarUrl = '',
     required this.role,
     required this.content,
     required this.createdAt,
@@ -22,6 +23,7 @@ class MessageModel {
   final String roomId;
   final String? userId;
   final String authorName;
+  final String authorAvatarUrl;
   final String role;
   final String content;
   final DateTime createdAt;
@@ -38,6 +40,7 @@ class MessageModel {
         roomId: roomId,
         userId: userId,
         authorName: authorName,
+        authorAvatarUrl: authorAvatarUrl,
         role: role,
         content: content,
         createdAt: createdAt,
@@ -56,6 +59,7 @@ class MessageModel {
       roomId: json['roomId']?.toString() ?? '',
       userId: json['userId']?.toString(),
       authorName: json['authorName']?.toString() ?? '',
+      authorAvatarUrl: json['authorAvatarUrl']?.toString() ?? '',
       role: json['role']?.toString() ?? 'user',
       content: json['content']?.toString() ?? '',
       imageId: json['imageId']?.toString(),

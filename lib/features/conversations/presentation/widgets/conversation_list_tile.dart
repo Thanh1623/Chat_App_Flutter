@@ -1,6 +1,7 @@
 import 'package:chat_app/app/router/chat_route_args.dart';
 import 'package:chat_app/app/router/routes.dart';
 import 'package:chat_app/core/widgets/unread_count_badge.dart';
+import 'package:chat_app/features/chat/presentation/widgets/chat_message_avatar.dart';
 import 'package:chat_app/features/conversations/domain/entities/conversation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -13,16 +14,31 @@ class ConversationListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isGroup = conversation.type == ConversationType.group;
-
+    final avatarUrl = conversation.avatarUrl.trim();
     final hasUnread = conversation.unreadCount > 0;
+
+    Widget leadingAvatar;
+    if (isGroup && avatarUrl.isEmpty) {
+      leadingAvatar = CircleAvatar(
+        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+        child: Icon(
+          Icons.groups,
+          color: Theme.of(context).colorScheme.onPrimaryContainer,
+        ),
+      );
+    } else {
+      leadingAvatar = ChatMessageAvatar(
+        displayName: conversation.title,
+        avatarUrl: avatarUrl,
+        radius: 22,
+      );
+    }
 
     return ListTile(
       leading: Stack(
         clipBehavior: Clip.none,
         children: [
-          CircleAvatar(
-            child: Icon(isGroup ? Icons.groups : Icons.person),
-          ),
+          leadingAvatar,
           if (hasUnread)
             Positioned(
               right: -4,
