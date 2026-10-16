@@ -280,6 +280,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                   onOpenSenderProfile: _openUserProfile,
                   onRetry: () =>
                       ref.read(chatControllerProvider(roomId).notifier).load(),
+                  onLoadMore: () => ref
+                      .read(chatControllerProvider(roomId).notifier)
+                      .loadMore(),
                 );
               },
             ),
@@ -319,7 +322,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   }
 }
 
-class _MessageList extends StatelessWidget {
+class _MessageList extends StatefulWidget {
   const _MessageList({
     required this.chat,
     required this.myId,
@@ -328,6 +331,7 @@ class _MessageList extends StatelessWidget {
     required this.showSenderNames,
     required this.onOpenSenderProfile,
     required this.onRetry,
+    required this.onLoadMore,
   });
 
   final ChatController chat;
@@ -337,26 +341,70 @@ class _MessageList extends StatelessWidget {
   final bool showSenderNames;
   final void Function(String userId) onOpenSenderProfile;
   final VoidCallback onRetry;
+  final VoidCallback onLoadMore;
+
+  @override
+  State<_MessageList> createState() => _MessageListState();
+}
+
+class _MessageListState extends State<_MessageList> {
+  final _scroll = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scroll.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scroll
+      ..removeListener(_onScroll)
+      ..dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scroll.hasClients) return;
+    final position = _scroll.position;
+    if (position.pixels < position.maxScrollExtent - 240) return;
+    widget.onLoadMore();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final chat = widget.chat;
     if (chat.isLoading && chat.messages.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
     if (chat.error != null && chat.messages.isEmpty) {
-      return ErrorView(message: chat.error!, onRetry: onRetry);
+      return ErrorView(message: chat.error!, onRetry: widget.onRetry);
     }
     if (chat.messages.isEmpty) {
       return const Center(child: Text('Chưa có tin nhắn'));
     }
 
+    final extra = chat.isLoadingMore ? 1 : 0;
     return ListView.builder(
+      controller: _scroll,
       reverse: true,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      itemCount: chat.messages.length,
+      itemCount: chat.messages.length + extra,
       itemBuilder: (context, index) {
+        if (index >= chat.messages.length) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: Center(
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+          );
+        }
         final message = chat.messages[index];
-        final isMine = myId != null && message.userId == myId;
+        final isMine = widget.myId != null && message.userId == widget.myId;
         return _MessageBubble(
           key: ValueKey(message.id),
           message: message,
@@ -364,11 +412,11 @@ class _MessageList extends StatelessWidget {
           avatarUrl: _resolveAvatarUrl(
             message: message,
             isMine: isMine,
-            myAvatarUrl: myAvatarUrl,
-            avatarByUserId: avatarByUserId,
+            myAvatarUrl: widget.myAvatarUrl,
+            avatarByUserId: widget.avatarByUserId,
           ),
-          showSenderName: showSenderNames,
-          onOpenSenderProfile: onOpenSenderProfile,
+          showSenderName: widget.showSenderNames,
+          onOpenSenderProfile: widget.onOpenSenderProfile,
         );
       },
     );

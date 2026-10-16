@@ -21,12 +21,17 @@ final chatControllerProvider = ChangeNotifierProvider.autoDispose
 class ChatController extends ChangeNotifier {
   ChatController(this._ref, this.roomId);
 
+  static const _pageSize = 80;
+
   final Ref _ref;
   final String roomId;
 
   List<ChatMessage> _messages = [];
   bool _loading = false;
+  bool _loadingMore = false;
   bool _sending = false;
+  bool _hasMore = false;
+  String? _nextCursor;
   String? _error;
 
   /// Giữ subscription để lúc thoát phòng thì cancel (tránh leak).
@@ -34,7 +39,9 @@ class ChatController extends ChangeNotifier {
 
   List<ChatMessage> get messages => _messages;
   bool get isLoading => _loading;
+  bool get isLoadingMore => _loadingMore;
   bool get isSending => _sending;
+  bool get hasMore => _hasMore;
   String? get error => _error;
 
   ChatRepository get _repo => _ref.read(chatRepositoryProvider);
@@ -45,8 +52,10 @@ class ChatController extends ChangeNotifier {
     _error = null;
     notifyListeners();
     try {
-      final items = await _repo.fetchMessages(roomId);
-      _messages = items.reversed.toList();
+      final page = await _repo.fetchMessages(roomId, limit: _pageSize);
+      _messages = page.items.reversed.toList();
+      _hasMore = page.hasMore;
+      _nextCursor = page.nextCursor;
       await _markLatestRead();
       _startRealtime();
     } on Failure catch (e) {
@@ -55,6 +64,34 @@ class ChatController extends ChangeNotifier {
       _error = e.toString();
     } finally {
       _loading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> loadMore() async {
+    if (!_hasMore || _loadingMore || _loading) return;
+    final cursor = _nextCursor;
+    if (cursor == null || cursor.isEmpty) return;
+
+    _loadingMore = true;
+    notifyListeners();
+    try {
+      final page = await _repo.fetchMessages(
+        roomId,
+        limit: _pageSize,
+        cursor: cursor,
+      );
+      final existing = {for (final m in _messages) m.id};
+      final older = page.items.reversed.where((m) => !existing.contains(m.id));
+      _messages = [..._messages, ...older];
+      _hasMore = page.hasMore;
+      _nextCursor = page.nextCursor;
+    } on Failure catch (e) {
+      _error = e.message;
+    } catch (e) {
+      _error = e.toString();
+    } finally {
+      _loadingMore = false;
       notifyListeners();
     }
   }

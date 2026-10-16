@@ -4,6 +4,8 @@ import 'package:chat_app/core/network/image_multipart.dart';
 import 'package:chat_app/features/chat/data/models/message_model.dart';
 import 'package:chat_app/features/chat/data/models/room_file_model.dart';
 import 'package:chat_app/features/chat/data/models/room_image_model.dart';
+import 'package:chat_app/features/chat/domain/entities/chat_message.dart';
+import 'package:chat_app/features/chat/domain/entities/messages_page.dart';
 import 'package:dio/dio.dart';
 
 class ChatRemoteDataSource {
@@ -11,15 +13,19 @@ class ChatRemoteDataSource {
 
   final Dio _dio;
 
-  Future<List<MessageModel>> fetchMessages(String roomId) async {
-    final response = await _dio.get<List<dynamic>>(
+  Future<MessagesPage> fetchMessages(
+    String roomId, {
+    int limit = 80,
+    String? cursor,
+  }) async {
+    final response = await _dio.get<dynamic>(
       ApiEndpoints.conversationMessages(roomId),
+      queryParameters: {
+        'limit': limit,
+        if (cursor != null && cursor.isNotEmpty) 'cursor': cursor,
+      },
     );
-    final list = response.data ?? [];
-    return list
-        .whereType<Map<String, dynamic>>()
-        .map(MessageModel.fromJson)
-        .toList();
+    return parseMessagesPage(response.data);
   }
 
   Future<MessageModel> sendMessage(
@@ -98,4 +104,39 @@ class ChatRemoteDataSource {
       data: {'messageId': messageId},
     );
   }
+}
+
+MessagesPage parseMessagesPage(dynamic data) {
+  if (data is List) {
+    return MessagesPage(items: _mapMessages(data), hasMore: false);
+  }
+  if (data is! Map<String, dynamic>) {
+    return const MessagesPage(items: [], hasMore: false);
+  }
+
+  final rawItems = data['data'];
+  final list = rawItems is List ? rawItems : const [];
+  var hasMore = false;
+  String? nextCursor;
+  final meta = data['meta'];
+  if (meta is Map<String, dynamic>) {
+    hasMore = meta['hasMore'] == true;
+    final cursorRaw = meta['nextCursor']?.toString();
+    if (cursorRaw != null && cursorRaw.isNotEmpty) {
+      nextCursor = cursorRaw;
+    }
+  }
+  return MessagesPage(
+    items: _mapMessages(list),
+    hasMore: hasMore,
+    nextCursor: nextCursor,
+  );
+}
+
+List<ChatMessage> _mapMessages(List<dynamic> list) {
+  return list
+      .whereType<Map<String, dynamic>>()
+      .map(MessageModel.fromJson)
+      .map((m) => m.toEntity())
+      .toList();
 }

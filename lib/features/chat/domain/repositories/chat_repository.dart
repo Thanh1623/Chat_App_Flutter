@@ -1,7 +1,12 @@
 import 'package:chat_app/features/chat/domain/entities/chat_message.dart';
+import 'package:chat_app/features/chat/domain/entities/messages_page.dart';
 
 abstract interface class ChatRepository {
-  Future<List<ChatMessage>> fetchMessages(String roomId);
+  Future<MessagesPage> fetchMessages(
+    String roomId, {
+    int limit = 80,
+    String? cursor,
+  });
   Future<ChatMessage> sendMessage(String roomId, String content);
   Future<ChatMessage> sendImageMessage(
     String roomId, {

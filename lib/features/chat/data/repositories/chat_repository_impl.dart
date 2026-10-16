@@ -3,6 +3,7 @@ import 'package:chat_app/core/network/chat_socket_client.dart';
 import 'package:chat_app/features/chat/data/datasources/chat_remote_data_source.dart';
 import 'package:chat_app/features/chat/data/models/message_model.dart';
 import 'package:chat_app/features/chat/domain/entities/chat_message.dart';
+import 'package:chat_app/features/chat/domain/entities/messages_page.dart';
 import 'package:chat_app/features/chat/domain/repositories/chat_repository.dart';
 
 class ChatRepositoryImpl implements ChatRepository {
@@ -12,11 +13,13 @@ class ChatRepositoryImpl implements ChatRepository {
   final ChatSocketClient _socket;
 
   @override
-  /// Lấy tin nhắn từ remote
-  Future<List<ChatMessage>> fetchMessages(String roomId) async {
+  Future<MessagesPage> fetchMessages(
+    String roomId, {
+    int limit = 80,
+    String? cursor,
+  }) async {
     try {
-      final models = await _remote.fetchMessages(roomId);
-      return models.map((m) => m.toEntity()).toList();
+      return await _remote.fetchMessages(roomId, limit: limit, cursor: cursor);
     } catch (e) {
       throw mapException(e);
     }
