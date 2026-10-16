@@ -1,6 +1,7 @@
 import 'package:chat_app/app/router/routes.dart';
 import 'package:chat_app/core/storage/session_storage.dart';
 import 'package:chat_app/features/auth/presentation/providers/auth_controller.dart';
+import 'package:chat_app/core/widgets/confirm_dialog.dart';
 import 'package:chat_app/core/widgets/error_view.dart';
 import 'package:chat_app/features/chat/domain/entities/chat_message.dart';
 import 'package:chat_app/features/chat/presentation/chat_file_format.dart';
@@ -8,6 +9,7 @@ import 'package:chat_app/features/chat/presentation/chat_file_send.dart';
 import 'package:chat_app/features/chat/presentation/chat_image_send.dart';
 import 'package:chat_app/features/chat/presentation/providers/chat_controller.dart';
 import 'package:chat_app/features/chat/presentation/widgets/chat_message_avatar.dart';
+import 'package:chat_app/features/chat/presentation/widgets/group_members_sheet.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:chat_app/features/conversations/presentation/providers/conversations_provider.dart';
 import 'package:flutter/material.dart';
@@ -166,29 +168,22 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     }
   }
 
-  Future<void> _confirmDeleteGroup() async {
-    final ok = await showDialog<bool>(
+  Future<void> _openMembers() async {
+    await showGroupMembersSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Xóa nhóm?'),
-        content: const Text(
-          'Toàn bộ tin nhắn trong nhóm sẽ bị xóa. Không thể hoàn tác.',
-        ),
-        actionsAlignment: MainAxisAlignment.end,
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Hủy'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(minimumSize: const Size(64, 48)),
-            child: const Text('Xóa'),
-          ),
-        ],
-      ),
+      roomId: widget.conversationId,
+      canManage: widget.canDelete,
+      onChanged: _loadMemberAvatars,
     );
-    if (ok != true || !mounted) return;
+  }
+
+  Future<void> _confirmDeleteGroup() async {
+    final ok = await showConfirmDialog(
+      context: context,
+      title: 'Xóa nhóm?',
+      message: 'Toàn bộ tin nhắn trong nhóm sẽ bị xóa. Không thể hoàn tác.',
+    );
+    if (!ok || !mounted) return;
 
     try {
       await ref
@@ -247,17 +242,23 @@ class _ChatPageState extends ConsumerState<ChatPage> {
               onPressed: _openDirectPeerProfile,
               icon: const Icon(Icons.person_outline),
             ),
-          if (widget.canDelete)
+          if (widget.isGroup)
             PopupMenuButton<String>(
               icon: const Icon(Icons.more_vert),
               onSelected: (value) {
+                if (value == 'members') _openMembers();
                 if (value == 'delete') _confirmDeleteGroup();
               },
-              itemBuilder: (context) => const [
-                PopupMenuItem(
-                  value: 'delete',
-                  child: Text('Xóa nhóm'),
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'members',
+                  child: Text('Thành viên'),
                 ),
+                if (widget.canDelete)
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: Text('Xóa nhóm'),
+                  ),
               ],
             ),
         ],

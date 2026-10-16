@@ -71,8 +71,32 @@ class ConversationsRemoteDataSource {
   Future<List<ContactUser>> fetchRoomMembers(String roomId) async {
     final response =
         await _dio.get<List<dynamic>>(ApiEndpoints.roomMembers(roomId));
-    final list = response.data ?? [];
-    return list
+    return _parseMembers(response.data);
+  }
+
+  Future<List<ContactUser>> addRoomMember({
+    required String roomId,
+    required String userId,
+  }) async {
+    final response = await _dio.post<List<dynamic>>(
+      ApiEndpoints.roomMembers(roomId),
+      data: {'userId': userId},
+    );
+    return _parseMembers(response.data);
+  }
+
+  Future<List<ContactUser>> removeRoomMember({
+    required String roomId,
+    required String userId,
+  }) async {
+    final response = await _dio.delete<List<dynamic>>(
+      ApiEndpoints.roomMember(roomId, userId),
+    );
+    return _parseMembers(response.data);
+  }
+
+  List<ContactUser> _parseMembers(List<dynamic>? data) {
+    return (data ?? [])
         .whereType<Map<String, dynamic>>()
         .map(ContactUserModel.fromJson)
         .map((m) => m.toEntity())

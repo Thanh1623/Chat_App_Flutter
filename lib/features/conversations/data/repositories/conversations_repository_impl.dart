@@ -65,4 +65,28 @@ class ConversationsRepositoryImpl implements ConversationsRepository {
       throw mapException(e);
     }
   }
+
+  @override
+  Future<List<ContactUser>> addRoomMember({
+    required String roomId,
+    required String userId,
+  }) async {
+    try {
+      return await _remote.addRoomMember(roomId: roomId, userId: userId);
+    } catch (e) {
+      throw mapException(e);
+    }
+  }
+
+  @override
+  Future<List<ContactUser>> removeRoomMember({
+    required String roomId,
+    required String userId,
+  }) async {
+    try {
+      return await _remote.removeRoomMember(roomId: roomId, userId: userId);
+    } catch (e) {
+      throw mapException(e);
+    }
+  }
 }

@@ -18,4 +18,14 @@ abstract interface class ConversationsRepository {
   Future<void> deleteRoom(String roomId);
 
   Future<List<ContactUser>> fetchRoomMembers(String roomId);
+
+  Future<List<ContactUser>> addRoomMember({
+    required String roomId,
+    required String userId,
+  });
+
+  Future<List<ContactUser>> removeRoomMember({
+    required String roomId,
+    required String userId,
+  });
 }
