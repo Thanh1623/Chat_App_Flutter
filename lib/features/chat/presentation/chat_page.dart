@@ -224,7 +224,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         }
       },
       child: Scaffold(
-      backgroundColor: primary.withValues(alpha: 0.08),
+      backgroundColor: const Color(0xFFF0F2F5),
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         backgroundColor: primary,

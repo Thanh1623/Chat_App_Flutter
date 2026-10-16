@@ -16,6 +16,7 @@ class App extends ConsumerWidget {
       title: 'Chat App',
       theme: AppTheme.light(accent),
       darkTheme: AppTheme.dark(accent),
+      themeMode: ThemeMode.light,
       routerConfig: router,
       debugShowCheckedModeBanner: false,
     );
