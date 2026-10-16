@@ -645,7 +645,7 @@ class _BubbleBody extends StatelessWidget {
   }
 }
 
-class _MessageComposer extends StatelessWidget {
+class _MessageComposer extends StatefulWidget {
   const _MessageComposer({
     required this.controller,
     required this.focusNode,
@@ -663,6 +663,49 @@ class _MessageComposer extends StatelessWidget {
   final VoidCallback onPickFile;
 
   @override
+  State<_MessageComposer> createState() => _MessageComposerState();
+}
+
+class _MessageComposerState extends State<_MessageComposer> {
+  bool _actionsExpanded = true;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.focusNode.addListener(_onFocusChange);
+    widget.controller.addListener(_onTextChange);
+  }
+
+  @override
+  void dispose() {
+    widget.focusNode.removeListener(_onFocusChange);
+    widget.controller.removeListener(_onTextChange);
+    super.dispose();
+  }
+
+  void _onFocusChange() {
+    if (widget.focusNode.hasFocus) {
+      _collapseActions();
+    } else if (widget.controller.text.isEmpty) {
+      _expandActions();
+    }
+  }
+
+  void _onTextChange() {
+    if (widget.controller.text.isNotEmpty) _collapseActions();
+  }
+
+  void _collapseActions() {
+    if (!_actionsExpanded) return;
+    setState(() => _actionsExpanded = false);
+  }
+
+  void _expandActions() {
+    if (_actionsExpanded) return;
+    setState(() => _actionsExpanded = true);
+  }
+
+  @override
   Widget build(BuildContext context) {
     final primary = Theme.of(context).colorScheme.primary;
     return SafeArea(
@@ -673,24 +716,43 @@ class _MessageComposer extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(8, 8, 4, 8),
           child: Row(
             children: [
-              IconButton(
-                onPressed: sending ? null : onPickImage,
-                icon: Icon(Icons.image_outlined, color: primary),
-                tooltip: 'Gửi ảnh',
-              ),
-              IconButton(
-                onPressed: sending ? null : onPickFile,
-                icon: Icon(Icons.attach_file, color: primary),
-                tooltip: 'Gửi tệp',
+              AnimatedSize(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOut,
+                alignment: Alignment.centerLeft,
+                child: _actionsExpanded
+                    ? Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            onPressed:
+                                widget.sending ? null : widget.onPickImage,
+                            icon: Icon(Icons.image_outlined, color: primary),
+                            tooltip: 'Gửi ảnh',
+                          ),
+                          IconButton(
+                            onPressed:
+                                widget.sending ? null : widget.onPickFile,
+                            icon: Icon(Icons.attach_file, color: primary),
+                            tooltip: 'Gửi tệp',
+                          ),
+                        ],
+                      )
+                    : IconButton(
+                        onPressed: _expandActions,
+                        icon: Icon(Icons.chevron_right, color: primary),
+                        tooltip: 'Thêm',
+                      ),
               ),
               Expanded(
                 child: TextField(
-                  controller: controller,
-                  focusNode: focusNode,
+                  controller: widget.controller,
+                  focusNode: widget.focusNode,
                   minLines: 1,
                   maxLines: 4,
                   textInputAction: TextInputAction.send,
-                  onSubmitted: (_) => onSend(),
+                  onTap: _collapseActions,
+                  onSubmitted: (_) => widget.onSend(),
                   decoration: InputDecoration(
                     hintText: 'Tin nhắn',
                     filled: true,
@@ -715,8 +777,8 @@ class _MessageComposer extends StatelessWidget {
                 ),
               ),
               IconButton(
-                onPressed: sending ? null : onSend,
-                icon: sending
+                onPressed: widget.sending ? null : widget.onSend,
+                icon: widget.sending
                     ? const SizedBox(
                         width: 20,
                         height: 20,
