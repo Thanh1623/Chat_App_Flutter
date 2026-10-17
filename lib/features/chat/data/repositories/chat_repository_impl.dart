@@ -4,6 +4,7 @@ import 'package:chat_app/features/chat/data/datasources/chat_remote_data_source.
 import 'package:chat_app/features/chat/data/models/message_model.dart';
 import 'package:chat_app/features/chat/domain/entities/chat_message.dart';
 import 'package:chat_app/features/chat/domain/entities/messages_page.dart';
+import 'package:chat_app/features/chat/domain/entities/room_media.dart';
 import 'package:chat_app/features/chat/domain/entities/room_read.dart';
 import 'package:chat_app/features/chat/domain/repositories/chat_repository.dart';
 
@@ -179,6 +180,33 @@ class ChatRepositoryImpl implements ChatRepository {
   Future<void> hideMessage(String roomId, String messageId) async {
     try {
       await _remote.hideMessage(roomId, messageId);
+    } catch (e) {
+      throw mapException(e);
+    }
+  }
+
+  @override
+  Future<List<RoomMediaImage>> fetchRoomImages(String roomId) async {
+    try {
+      return await _remote.fetchRoomImages(roomId);
+    } catch (e) {
+      throw mapException(e);
+    }
+  }
+
+  @override
+  Future<List<RoomMediaFile>> fetchRoomFiles(String roomId) async {
+    try {
+      return await _remote.fetchRoomFiles(roomId);
+    } catch (e) {
+      throw mapException(e);
+    }
+  }
+
+  @override
+  Future<List<RoomMediaLink>> fetchRoomLinks(String roomId) async {
+    try {
+      return await _remote.fetchRoomLinks(roomId);
     } catch (e) {
       throw mapException(e);
     }

@@ -12,6 +12,7 @@ import 'package:chat_app/features/chat/presentation/providers/chat_controller.da
 import 'package:chat_app/features/chat/presentation/widgets/chat_message_avatar.dart';
 import 'package:chat_app/features/chat/presentation/widgets/group_members_sheet.dart';
 import 'package:chat_app/features/chat/presentation/widgets/pinned_messages_sheet.dart';
+import 'package:chat_app/features/chat/presentation/widgets/room_media_sheet.dart';
 import 'package:chat_app/features/chat/presentation/widgets/reaction_users_sheet.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:chat_app/features/conversations/presentation/providers/conversations_provider.dart';
@@ -292,6 +293,14 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           ),
         ),
         actions: [
+          IconButton(
+            tooltip: 'Ảnh, file, link',
+            onPressed: () => showRoomMediaSheet(
+              context: context,
+              roomId: widget.conversationId,
+            ),
+            icon: const Icon(Icons.perm_media_outlined),
+          ),
           if (!widget.isGroup)
             IconButton(
               tooltip: 'Xem hồ sơ',

@@ -9,6 +9,7 @@ abstract final class ApiEndpoints {
   static String conversationMessages(String id) => '/rooms/$id/messages';
   static String roomImages(String roomId) => '/rooms/$roomId/images';
   static String roomFiles(String roomId) => '/rooms/$roomId/files';
+  static String roomLinks(String roomId) => '/rooms/$roomId/links';
   static String markRoomRead(String roomId) => '/rooms/$roomId/read';
   static String roomReads(String roomId) => '/rooms/$roomId/reads';
 

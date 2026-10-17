@@ -1,5 +1,6 @@
 import 'package:chat_app/features/chat/domain/entities/chat_message.dart';
 import 'package:chat_app/features/chat/domain/entities/messages_page.dart';
+import 'package:chat_app/features/chat/domain/entities/room_media.dart';
 import 'package:chat_app/features/chat/domain/entities/room_read.dart';
 
 abstract interface class ChatRepository {
@@ -36,6 +37,9 @@ abstract interface class ChatRepository {
     required bool pinned,
   });
   Future<List<ChatMessage>> fetchPinned(String roomId);
+  Future<List<RoomMediaImage>> fetchRoomImages(String roomId);
+  Future<List<RoomMediaFile>> fetchRoomFiles(String roomId);
+  Future<List<RoomMediaLink>> fetchRoomLinks(String roomId);
   Future<ChatMessage> reactMessage(
     String roomId,
     String messageId, {

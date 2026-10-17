@@ -6,6 +6,7 @@ import 'package:chat_app/features/chat/data/models/room_file_model.dart';
 import 'package:chat_app/features/chat/data/models/room_image_model.dart';
 import 'package:chat_app/features/chat/domain/entities/chat_message.dart';
 import 'package:chat_app/features/chat/domain/entities/messages_page.dart';
+import 'package:chat_app/features/chat/domain/entities/room_media.dart';
 import 'package:chat_app/features/chat/domain/entities/room_read.dart';
 import 'package:dio/dio.dart';
 
@@ -151,6 +152,21 @@ class ChatRemoteDataSource {
 
   Future<void> hideMessage(String roomId, String messageId) async {
     await _dio.delete<void>(ApiEndpoints.hideMessage(roomId, messageId));
+  }
+
+  Future<List<RoomMediaImage>> fetchRoomImages(String roomId) async {
+    final response = await _dio.get<dynamic>(ApiEndpoints.roomImages(roomId));
+    return parseRoomImages(response.data);
+  }
+
+  Future<List<RoomMediaFile>> fetchRoomFiles(String roomId) async {
+    final response = await _dio.get<dynamic>(ApiEndpoints.roomFiles(roomId));
+    return parseRoomFiles(response.data);
+  }
+
+  Future<List<RoomMediaLink>> fetchRoomLinks(String roomId) async {
+    final response = await _dio.get<dynamic>(ApiEndpoints.roomLinks(roomId));
+    return parseRoomLinks(response.data);
   }
 
   Future<List<ChatMessage>> fetchPinned(String roomId) async {
