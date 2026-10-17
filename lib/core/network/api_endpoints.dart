@@ -30,4 +30,8 @@ abstract final class ApiEndpoints {
   static String roomPins(String roomId) => '/rooms/$roomId/pins';
   static String messageReactions(String roomId, String messageId) =>
       '/rooms/$roomId/messages/$messageId/reactions';
+  static String recallMessage(String roomId, String messageId) =>
+      '/rooms/$roomId/messages/$messageId/recall';
+  static String hideMessage(String roomId, String messageId) =>
+      '/rooms/$roomId/messages/$messageId';
 }

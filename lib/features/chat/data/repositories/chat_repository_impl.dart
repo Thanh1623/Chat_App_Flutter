@@ -156,6 +156,25 @@ class ChatRepositoryImpl implements ChatRepository {
   }
 
   @override
+  Future<ChatMessage> recallMessage(String roomId, String messageId) async {
+    try {
+      final model = await _remote.recallMessage(roomId, messageId);
+      return model.toEntity();
+    } catch (e) {
+      throw mapException(e);
+    }
+  }
+
+  @override
+  Future<void> hideMessage(String roomId, String messageId) async {
+    try {
+      await _remote.hideMessage(roomId, messageId);
+    } catch (e) {
+      throw mapException(e);
+    }
+  }
+
+  @override
   Future<List<ChatMessage>> fetchPinned(String roomId) async {
     try {
       return await _remote.fetchPinned(roomId);

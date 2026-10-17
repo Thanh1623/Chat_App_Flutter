@@ -135,6 +135,17 @@ class ChatRemoteDataSource {
     return MessageModel.fromJson(response.data ?? {});
   }
 
+  Future<MessageModel> recallMessage(String roomId, String messageId) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      ApiEndpoints.recallMessage(roomId, messageId),
+    );
+    return MessageModel.fromJson(response.data ?? {});
+  }
+
+  Future<void> hideMessage(String roomId, String messageId) async {
+    await _dio.delete<void>(ApiEndpoints.hideMessage(roomId, messageId));
+  }
+
   Future<List<ChatMessage>> fetchPinned(String roomId) async {
     final response = await _dio.get<dynamic>(ApiEndpoints.roomPins(roomId));
     final list = response.data is List ? response.data as List : const [];

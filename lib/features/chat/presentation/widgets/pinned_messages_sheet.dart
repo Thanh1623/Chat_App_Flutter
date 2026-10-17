@@ -36,9 +36,12 @@ Future<void> showPinMessageActions({
   required void Function(bool pinned) onSetPinned,
   required void Function(String emoji) onReact,
   required VoidCallback onReply,
+  VoidCallback? onRecall,
+  VoidCallback? onHide,
 }) async {
   HapticFeedback.mediumImpact();
   final pinned = message.pinned;
+  final recalled = message.recalled;
   await showModalBottomSheet<void>(
     context: context,
     backgroundColor: Colors.transparent,
@@ -67,49 +70,82 @@ Future<void> showPinMessageActions({
                   ),
                   const SizedBox(height: 14),
                   _PinPreviewChip(message: message),
-                  const SizedBox(height: 14),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      for (final emoji in reactionEmojis)
-                        _ReactionPickButton(
-                          emoji: emoji,
-                          selected: message.reactions.any(
-                            (r) => r.emoji == emoji && r.isMine(myId),
+                  if (!recalled) ...[
+                    const SizedBox(height: 14),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        for (final emoji in reactionEmojis)
+                          _ReactionPickButton(
+                            emoji: emoji,
+                            selected: message.reactions.any(
+                              (r) => r.emoji == emoji && r.isMine(myId),
+                            ),
+                            onTap: () {
+                              Navigator.pop(ctx);
+                              onReact(emoji);
+                            },
                           ),
-                          onTap: () {
-                            Navigator.pop(ctx);
-                            onReact(emoji);
-                          },
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: OutlinedButton.icon(
-                      onPressed: () {
-                        Navigator.pop(ctx);
-                        onReply();
-                      },
-                      icon: const Icon(Icons.reply),
-                      label: const Text('Trả lời'),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: () {
-                        Navigator.pop(ctx);
-                        onSetPinned(!pinned);
-                      },
-                      icon: Icon(
-                        pinned ? Icons.push_pin_outlined : Icons.push_pin,
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          onReply();
+                        },
+                        icon: const Icon(Icons.reply),
+                        label: const Text('Trả lời'),
                       ),
-                      label: Text(pinned ? 'Bỏ ghim' : 'Ghim tin nhắn'),
                     ),
-                  ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          onSetPinned(!pinned);
+                        },
+                        icon: Icon(
+                          pinned ? Icons.push_pin_outlined : Icons.push_pin,
+                        ),
+                        label: Text(pinned ? 'Bỏ ghim' : 'Ghim tin nhắn'),
+                      ),
+                    ),
+                  ],
+                  if (onRecall != null) ...[
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          onRecall();
+                        },
+                        icon: const Icon(Icons.undo),
+                        label: const Text('Thu hồi'),
+                      ),
+                    ),
+                  ],
+                  if (onHide != null) ...[
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: TextButton.icon(
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          onHide();
+                        },
+                        icon: Icon(Icons.delete_outline, color: scheme.error),
+                        label: Text(
+                          'Xóa phía tôi',
+                          style: TextStyle(color: scheme.error),
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),

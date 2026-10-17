@@ -179,6 +179,7 @@ class ChatController extends ChangeNotifier {
 
   // startReply là phương thức để bắt đầu reply
   void startReply(ChatMessage message) {
+    if (message.recalled) return;
     _replyingTo = message;
     flashMessage(message.id);
   }
@@ -200,6 +201,40 @@ class ChatController extends ChangeNotifier {
   void clearReply() {
     if (_replyingTo == null) return;
     _replyingTo = null;
+    notifyListeners();
+  }
+
+  Future<void> recallMessage(ChatMessage message) async {
+    try {
+      final updated = await _repo.recallMessage(roomId, message.id);
+      if (_replyingTo?.id == message.id) _replyingTo = null;
+      _upsert(updated, insertIfMissing: false);
+    } on Failure catch (e) {
+      _error = e.message;
+      notifyListeners();
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+    }
+  }
+
+  Future<void> hideMessage(ChatMessage message) async {
+    try {
+      await _repo.hideMessage(roomId, message.id);
+      _removeLocal(message.id);
+    } on Failure catch (e) {
+      _error = e.message;
+      notifyListeners();
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+    }
+  }
+
+  void _removeLocal(String id) {
+    _messages = _messages.where((m) => m.id != id).toList();
+    _pinned = _pinned.where((p) => p.id != id).toList();
+    if (_replyingTo?.id == id) _replyingTo = null;
     notifyListeners();
   }
 

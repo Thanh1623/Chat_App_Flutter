@@ -12,6 +12,7 @@ void main() {
       'content': 'Xin chào',
       'createdAt': '2026-10-09T08:00:00.000Z',
       'pinned': true,
+      'recalled': false,
       'replyTo': {
         'id': 'm0',
         'authorName': 'An',
@@ -44,5 +45,10 @@ void main() {
     expect(parsed.toEntity().reactions.first.users.first.name, 'An');
     expect(parsed.toEntity().replyTo?.id, 'm0');
     expect(parsed.toEntity().replyTo?.preview, 'hi');
+    expect(parsed.toEntity().recalled, isFalse);
+    expect(
+      MessageModel.fromJson({'id': 'm2', 'recalled': true}).toEntity().recalled,
+      isTrue,
+    );
   });
 }

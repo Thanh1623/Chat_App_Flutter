@@ -49,6 +49,7 @@ class ChatMessage {
     this.fileMimeType,
     this.fileSizeBytes,
     this.pinned = false,
+    this.recalled = false,
     this.reactions = const [],
     this.replyTo,
   });
@@ -69,6 +70,7 @@ class ChatMessage {
   final String? fileMimeType;
   final int? fileSizeBytes;
   final bool pinned;
+  final bool recalled;
   final List<MessageReaction> reactions;
   final MessageReplyTo? replyTo;
 

@@ -18,6 +18,7 @@ class MessageModel {
     this.fileMimeType,
     this.fileSizeBytes,
     this.pinned = false,
+    this.recalled = false,
     this.reactions = const [],
     this.replyTo,
   });
@@ -38,6 +39,7 @@ class MessageModel {
   final String? fileMimeType;
   final int? fileSizeBytes;
   final bool pinned;
+  final bool recalled;
   final List<MessageReaction> reactions;
   final MessageReplyTo? replyTo;
   ChatMessage toEntity() => ChatMessage(
@@ -57,6 +59,7 @@ class MessageModel {
     fileMimeType: fileMimeType,
     fileSizeBytes: fileSizeBytes,
     pinned: pinned,
+    recalled: recalled,
     reactions: reactions,
     replyTo: replyTo,
   );
@@ -83,6 +86,7 @@ class MessageModel {
           DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
           DateTime.now(),
       pinned: json['pinned'] == true,
+      recalled: json['recalled'] == true,
       reactions: _reactionsFromJson(json['reactions']),
       replyTo: _replyToFromJson(json['replyTo']),
     );

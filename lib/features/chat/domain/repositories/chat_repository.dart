@@ -39,6 +39,8 @@ abstract interface class ChatRepository {
     String messageId, {
     required String emoji,
   });
+  Future<ChatMessage> recallMessage(String roomId, String messageId);
+  Future<void> hideMessage(String roomId, String messageId);
 
   /// Tin mới từ Socket. Chỉ room đang mở.
   Stream<ChatMessage> watchMessages(String roomId);

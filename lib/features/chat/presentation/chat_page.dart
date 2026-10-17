@@ -182,17 +182,45 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   void _togglePin(ChatMessage message) {
     final chat =
         ref.read(chatControllerProvider(widget.conversationId).notifier);
+    final myId = ref.read(sessionStorageProvider).user?.id;
+    final mine = myId != null && message.userId == myId && !message.isAgent;
     showPinMessageActions(
       context: context,
       message: message,
-      myId: ref.read(sessionStorageProvider).user?.id,
+      myId: myId,
       onSetPinned: (pinned) => chat.setPinned(message, pinned: pinned),
       onReact: (emoji) => chat.toggleReaction(message, emoji),
       onReply: () {
         chat.startReply(message);
         _composerFocus.requestFocus();
       },
+      onRecall: mine && !message.recalled
+          ? () => _confirmRecall(chat, message)
+          : null,
+      onHide: () => _confirmHide(chat, message),
     );
+  }
+
+  Future<void> _confirmRecall(ChatController chat, ChatMessage message) async {
+    final ok = await showConfirmDialog(
+      context: context,
+      title: 'Thu hồi tin nhắn?',
+      message: 'Mọi người trong phòng sẽ thấy tin đã được thu hồi.',
+      confirmLabel: 'Thu hồi',
+    );
+    if (!ok) return;
+    await chat.recallMessage(message);
+  }
+
+  Future<void> _confirmHide(ChatController chat, ChatMessage message) async {
+    final ok = await showConfirmDialog(
+      context: context,
+      title: 'Xóa phía tôi?',
+      message: 'Tin sẽ biến khỏi máy bạn. Người khác vẫn thấy.',
+      confirmLabel: 'Xóa',
+    );
+    if (!ok) return;
+    await chat.hideMessage(message);
   }
 
   void _showReactors(ChatMessage message, String emoji) {
@@ -663,7 +691,7 @@ class _MessageBubble extends StatelessWidget {
                           onOpenReply: onOpenReply,
                         ),
                       ),
-                      if (message.pinned)
+                      if (message.pinned && !message.recalled)
                         Positioned(
                           top: -5,
                           right: isMine ? -5 : null,
@@ -696,7 +724,7 @@ class _MessageBubble extends StatelessWidget {
                         ),
                     ],
                   ),
-                  if (message.reactions.isNotEmpty)
+                  if (!message.recalled && message.reactions.isNotEmpty)
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
                       child: Wrap(
@@ -749,6 +777,33 @@ class _BubbleBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (message.recalled) {
+      return DecoratedBox(
+        decoration: BoxDecoration(
+          color: isMine
+              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.12)
+              : const Color(0xFFE8EAED),
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(16),
+            topRight: const Radius.circular(16),
+            bottomLeft: Radius.circular(isMine ? 16 : 4),
+            bottomRight: Radius.circular(isMine ? 4 : 16),
+          ),
+        ),
+        child: const Padding(
+          padding: EdgeInsets.fromLTRB(12, 8, 12, 8),
+          child: Text(
+            'Tin nhắn đã được thu hồi',
+            style: TextStyle(
+              fontSize: 13,
+              fontStyle: FontStyle.italic,
+              color: Colors.black54,
+            ),
+          ),
+        ),
+      );
+    }
+
     final primary = Theme.of(context).colorScheme.primary;
     final bg = isMine
         ? primary
