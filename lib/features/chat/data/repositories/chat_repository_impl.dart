@@ -27,13 +27,21 @@ class ChatRepositoryImpl implements ChatRepository {
 
   @override
   /// Gửi tin nhắn từ remote
-  Future<ChatMessage> sendMessage(String roomId, String content) async {
+  Future<ChatMessage> sendMessage(
+    String roomId,
+    String content, {
+    String? replyToId,
+  }) async {
     final trimmed = content.trim();
     if (trimmed.isEmpty) {
       throw ArgumentError('Tin nhắn không được trống');
     }
     try {
-      final model = await _remote.sendMessage(roomId, content: trimmed);
+      final model = await _remote.sendMessage(
+        roomId,
+        content: trimmed,
+        replyToId: replyToId,
+      );
       return model.toEntity();
     } catch (e) {
       throw mapException(e);
@@ -45,6 +53,7 @@ class ChatRepositoryImpl implements ChatRepository {
     String roomId, {
     required List<int> bytes,
     required String filename,
+    String? replyToId,
   }) async {
     if (bytes.isEmpty) {
       throw ArgumentError('Tệp trống');
@@ -61,6 +70,7 @@ class ChatRepositoryImpl implements ChatRepository {
       final model = await _remote.sendMessage(
         roomId,
         fileId: uploaded.id,
+        replyToId: replyToId,
       );
       return model.toEntity();
     } catch (e) {
@@ -74,6 +84,7 @@ class ChatRepositoryImpl implements ChatRepository {
     required List<int> bytes,
     required String filename,
     String? caption,
+    String? replyToId,
   }) async {
     if (bytes.isEmpty) {
       throw ArgumentError('Ảnh trống');
@@ -91,6 +102,7 @@ class ChatRepositoryImpl implements ChatRepository {
         roomId,
         content: caption,
         imageId: uploaded.id,
+        replyToId: replyToId,
       );
       return model.toEntity();
     } catch (e) {

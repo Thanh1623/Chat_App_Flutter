@@ -12,6 +12,12 @@ void main() {
       'content': 'Xin chào',
       'createdAt': '2026-10-09T08:00:00.000Z',
       'pinned': true,
+      'replyTo': {
+        'id': 'm0',
+        'authorName': 'An',
+        'content': 'hi',
+        'recalled': false,
+      },
       'reactions': [
         {
           'emoji': '👍',
@@ -36,5 +42,7 @@ void main() {
     expect(parsed.toEntity().reactions.first.isMine('u1'), isTrue);
     expect(parsed.toEntity().reactions.first.isMine('u9'), isFalse);
     expect(parsed.toEntity().reactions.first.users.first.name, 'An');
+    expect(parsed.toEntity().replyTo?.id, 'm0');
+    expect(parsed.toEntity().replyTo?.preview, 'hi');
   });
 }

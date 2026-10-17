@@ -33,6 +33,7 @@ class ChatRemoteDataSource {
     String? content,
     String? imageId,
     String? fileId,
+    String? replyToId,
   }) async {
     final data = <String, dynamic>{};
     final text = content?.trim() ?? '';
@@ -44,6 +45,9 @@ class ChatRemoteDataSource {
     }
     if (fileId != null && fileId.isNotEmpty) {
       data['fileId'] = fileId;
+    }
+    if (replyToId != null && replyToId.isNotEmpty) {
+      data['replyToId'] = replyToId;
     }
     final response = await _dio.post<Map<String, dynamic>>(
       ApiEndpoints.conversationMessages(roomId),

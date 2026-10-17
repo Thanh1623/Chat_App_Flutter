@@ -19,6 +19,7 @@ class MessageModel {
     this.fileSizeBytes,
     this.pinned = false,
     this.reactions = const [],
+    this.replyTo,
   });
 
   final String id;
@@ -38,6 +39,7 @@ class MessageModel {
   final int? fileSizeBytes;
   final bool pinned;
   final List<MessageReaction> reactions;
+  final MessageReplyTo? replyTo;
   ChatMessage toEntity() => ChatMessage(
     id: id,
     roomId: roomId,
@@ -56,6 +58,7 @@ class MessageModel {
     fileSizeBytes: fileSizeBytes,
     pinned: pinned,
     reactions: reactions,
+    replyTo: replyTo,
   );
 
   factory MessageModel.fromJson(Map<String, dynamic> json) {
@@ -81,8 +84,22 @@ class MessageModel {
           DateTime.now(),
       pinned: json['pinned'] == true,
       reactions: _reactionsFromJson(json['reactions']),
+      replyTo: _replyToFromJson(json['replyTo']),
     );
   }
+}
+
+MessageReplyTo? _replyToFromJson(dynamic raw) {
+  if (raw is! Map<String, dynamic>) return null;
+  final id = raw['id']?.toString() ?? '';
+  if (id.isEmpty) return null;
+  return MessageReplyTo(
+    id: id,
+    authorName: raw['authorName']?.toString() ?? '',
+    content: raw['content']?.toString() ?? '',
+    imageUrl: raw['imageUrl']?.toString(),
+    recalled: raw['recalled'] == true,
+  );
 }
 
 List<MessageReaction> _reactionsFromJson(dynamic raw) {

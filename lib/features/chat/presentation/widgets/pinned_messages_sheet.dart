@@ -35,6 +35,7 @@ Future<void> showPinMessageActions({
   required String? myId,
   required void Function(bool pinned) onSetPinned,
   required void Function(String emoji) onReact,
+  required VoidCallback onReply,
 }) async {
   HapticFeedback.mediumImpact();
   final pinned = message.pinned;
@@ -84,6 +85,18 @@ Future<void> showPinMessageActions({
                     ],
                   ),
                   const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        onReply();
+                      },
+                      icon: const Icon(Icons.reply),
+                      label: const Text('Trả lời'),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton.icon(

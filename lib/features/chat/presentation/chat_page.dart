@@ -188,6 +188,10 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       myId: ref.read(sessionStorageProvider).user?.id,
       onSetPinned: (pinned) => chat.setPinned(message, pinned: pinned),
       onReact: (emoji) => chat.toggleReaction(message, emoji),
+      onReply: () {
+        chat.startReply(message);
+        _composerFocus.requestFocus();
+      },
     );
   }
 
@@ -333,6 +337,10 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                     controller: _composer,
                     focusNode: _composerFocus,
                     sending: chat.isSending,
+                    replyingTo: chat.replyingTo,
+                    onClearReply: () => ref
+                        .read(chatControllerProvider(roomId).notifier)
+                        .clearReply(),
                     onSend: _send,
                     onPickImage: _pickImage,
                     onPickFile: _pickFile,
@@ -379,6 +387,8 @@ class _MessageList extends StatefulWidget {
 
 class _MessageListState extends State<_MessageList> {
   final _scroll = ScrollController();
+  final _itemKeys = <String, GlobalKey>{};
+  String? _lastFlashId;
   bool _showJumpLatest = false;
 
   @override
@@ -388,11 +398,37 @@ class _MessageListState extends State<_MessageList> {
   }
 
   @override
+  void didUpdateWidget(covariant _MessageList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final flashId = widget.chat.flashMessageId;
+    if (flashId != null && flashId != _lastFlashId) {
+      _lastFlashId = flashId;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToMessage(flashId);
+      });
+    }
+  }
+
+  @override
   void dispose() {
     _scroll
       ..removeListener(_onScroll)
       ..dispose();
     super.dispose();
+  }
+
+  GlobalKey _keyFor(String id) =>
+      _itemKeys.putIfAbsent(id, GlobalKey.new);
+
+  void _scrollToMessage(String id) {
+    final ctx = _keyFor(id).currentContext;
+    if (ctx == null) return;
+    Scrollable.ensureVisible(
+      ctx,
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOutCubic,
+      alignment: 0.35,
+    );
   }
 
   void _onScroll() {
@@ -454,9 +490,10 @@ class _MessageListState extends State<_MessageList> {
             final message = chat.messages[index];
             final isMine = widget.myId != null && message.userId == widget.myId;
             return _MessageBubble(
-              key: ValueKey(message.id),
+              key: _keyFor(message.id),
               message: message,
               myId: widget.myId,
+              highlighted: widget.chat.flashMessageId == message.id,
               isMine: isMine,
               avatarUrl: _resolveAvatarUrl(
                 message: message,
@@ -468,6 +505,7 @@ class _MessageListState extends State<_MessageList> {
               onOpenSenderProfile: widget.onOpenSenderProfile,
               onPinToggle: widget.onPinToggle,
               onShowReactors: widget.onShowReactors,
+              onOpenReply: widget.chat.flashMessage,
             );
           },
         ),
@@ -527,22 +565,26 @@ class _MessageBubble extends StatelessWidget {
     super.key,
     required this.message,
     required this.myId,
+    required this.highlighted,
     required this.isMine,
     required this.avatarUrl,
     required this.showSenderName,
     required this.onOpenSenderProfile,
     required this.onPinToggle,
     required this.onShowReactors,
+    required this.onOpenReply,
   });
 
   final ChatMessage message;
   final String? myId;
+  final bool highlighted;
   final bool isMine;
   final String avatarUrl;
   final bool showSenderName;
   final void Function(String userId) onOpenSenderProfile;
   final void Function(ChatMessage message) onPinToggle;
   final void Function(ChatMessage message, String emoji) onShowReactors;
+  final void Function(String messageId) onOpenReply;
 
   @override
   Widget build(BuildContext context) {
@@ -552,8 +594,16 @@ class _MessageBubble extends StatelessWidget {
     final showAvatar = !isMine && !message.isAgent;
     final maxBubbleWidth = MediaQuery.sizeOf(context).width * 0.72;
 
-    return Padding(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOut,
       padding: const EdgeInsets.symmetric(vertical: 4),
+      decoration: BoxDecoration(
+        color: highlighted
+            ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.1)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Row(
         mainAxisAlignment:
             isMine ? MainAxisAlignment.end : MainAxisAlignment.start,
@@ -607,7 +657,11 @@ class _MessageBubble extends StatelessWidget {
                     children: [
                       GestureDetector(
                         onLongPress: () => onPinToggle(message),
-                        child: _BubbleBody(message: message, isMine: isMine),
+                        child: _BubbleBody(
+                          message: message,
+                          isMine: isMine,
+                          onOpenReply: onOpenReply,
+                        ),
                       ),
                       if (message.pinned)
                         Positioned(
@@ -683,10 +737,15 @@ class _MessageBubble extends StatelessWidget {
 }
 
 class _BubbleBody extends StatelessWidget {
-  const _BubbleBody({required this.message, required this.isMine});
+  const _BubbleBody({
+    required this.message,
+    required this.isMine,
+    required this.onOpenReply,
+  });
 
   final ChatMessage message;
   final bool isMine;
+  final void Function(String messageId) onOpenReply;
 
   @override
   Widget build(BuildContext context) {
@@ -723,6 +782,12 @@ class _BubbleBody extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (message.replyTo != null)
+              _InBubbleReplyQuote(
+                reply: message.replyTo!,
+                isMine: isMine,
+                onTap: () => onOpenReply(message.replyTo!.id),
+              ),
             if (fileUrl.isNotEmpty)
               Material(
                 color: isMine ? Colors.white.withValues(alpha: 0.12) : Colors.black12,
@@ -883,6 +948,86 @@ class _ReactionChip extends StatelessWidget {
   }
 }
 
+class _InBubbleReplyQuote extends StatelessWidget {
+  const _InBubbleReplyQuote({
+    required this.reply,
+    required this.isMine,
+    required this.onTap,
+  });
+
+  final MessageReplyTo reply;
+  final bool isMine;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final bar = isMine ? Colors.white : Theme.of(context).colorScheme.primary;
+    final nameColor = isMine ? Colors.white : Theme.of(context).colorScheme.primary;
+    final textColor = isMine ? Colors.white70 : Colors.black54;
+    final fill = isMine
+        ? Colors.white.withValues(alpha: 0.16)
+        : Colors.black.withValues(alpha: 0.05);
+    final thumb = reply.imageUrl?.trim() ?? '';
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          width: double.infinity,
+          margin: const EdgeInsets.fromLTRB(6, 6, 6, 0),
+          padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
+          decoration: BoxDecoration(
+            color: fill,
+            borderRadius: BorderRadius.circular(10),
+            border: Border(left: BorderSide(color: bar, width: 3)),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      reply.authorName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: nameColor,
+                      ),
+                    ),
+                    const SizedBox(height: 1),
+                    Text(
+                      reply.preview,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 12, height: 1.25, color: textColor),
+                    ),
+                  ],
+                ),
+              ),
+              if (thumb.isNotEmpty) ...[
+                const SizedBox(width: 8),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: Image.network(
+                    thumb,
+                    width: 36,
+                    height: 36,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _MessageComposer extends StatefulWidget {
   const _MessageComposer({
     required this.controller,
@@ -891,6 +1036,8 @@ class _MessageComposer extends StatefulWidget {
     required this.onSend,
     required this.onPickImage,
     required this.onPickFile,
+    this.replyingTo,
+    this.onClearReply,
   });
 
   final TextEditingController controller;
@@ -899,6 +1046,8 @@ class _MessageComposer extends StatefulWidget {
   final VoidCallback onSend;
   final VoidCallback onPickImage;
   final VoidCallback onPickFile;
+  final ChatMessage? replyingTo;
+  final VoidCallback? onClearReply;
 
   @override
   State<_MessageComposer> createState() => _MessageComposerState();
@@ -946,11 +1095,20 @@ class _MessageComposerState extends State<_MessageComposer> {
   @override
   Widget build(BuildContext context) {
     final primary = Theme.of(context).colorScheme.primary;
+    final reply = widget.replyingTo;
     return SafeArea(
       top: false,
       child: ColoredBox(
         color: Colors.white,
-        child: Padding(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (reply != null)
+              _ComposerReplyBar(
+                message: reply,
+                onClear: widget.onClearReply,
+              ),
+            Padding(
           padding: const EdgeInsets.fromLTRB(8, 8, 4, 8),
           child: Row(
             children: [
@@ -992,7 +1150,9 @@ class _MessageComposerState extends State<_MessageComposer> {
                   onTap: _collapseActions,
                   onSubmitted: (_) => widget.onSend(),
                   decoration: InputDecoration(
-                    hintText: 'Tin nhắn',
+                    hintText: reply == null
+                        ? 'Tin nhắn'
+                        : 'Trả lời ${reply.authorName}',
                     filled: true,
                     fillColor: const Color(0xFFF0F2F5),
                     border: OutlineInputBorder(
@@ -1026,8 +1186,98 @@ class _MessageComposerState extends State<_MessageComposer> {
               ),
             ],
           ),
+            ),
+          ],
         ),
       ),
+    );
+  }
+}
+
+class _ComposerReplyBar extends StatelessWidget {
+  const _ComposerReplyBar({
+    required this.message,
+    this.onClear,
+  });
+
+  final ChatMessage message;
+  final VoidCallback? onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
+    final thumb = message.imageUrl?.trim() ?? '';
+    final preview = message.content.trim().isEmpty
+        ? (message.hasImage
+            ? 'Ảnh'
+            : message.hasFile
+                ? 'Tệp'
+                : 'Tin nhắn')
+        : message.content;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 10, 4, 8),
+          child: Row(
+            children: [
+              Container(
+                width: 3,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: primary,
+                  borderRadius: BorderRadius.circular(99),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Đang trả lời ${message.authorName}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: primary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      preview,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Colors.black54,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (thumb.isNotEmpty) ...[
+                const SizedBox(width: 8),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: Image.network(
+                    thumb,
+                    width: 36,
+                    height: 36,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ],
+              IconButton(
+                tooltip: 'Hủy trả lời',
+                onPressed: onClear,
+                icon: const Icon(Icons.close, size: 20),
+              ),
+            ],
+          ),
+        ),
+        Divider(height: 1, color: Colors.black.withValues(alpha: 0.06)),
+      ],
     );
   }
 }

@@ -36,11 +36,16 @@ class ChatController extends ChangeNotifier {
 
   /// Giữ subscription để lúc thoát phòng thì cancel (tránh leak).
   StreamSubscription<ChatMessage>? _socketSub;
+  Timer? _flashTimer;
+  String? _flashMessageId;
 
   List<ChatMessage> _pinned = [];
+  ChatMessage? _replyingTo;
 
   List<ChatMessage> get messages => _messages;
   List<ChatMessage> get pinned => _pinned;
+  ChatMessage? get replyingTo => _replyingTo;
+  String? get flashMessageId => _flashMessageId;
   bool get isLoading => _loading;
   bool get isLoadingMore => _loadingMore;
   bool get isSending => _sending;
@@ -172,6 +177,32 @@ class ChatController extends ChangeNotifier {
     }
   }
 
+  // startReply là phương thức để bắt đầu reply
+  void startReply(ChatMessage message) {
+    _replyingTo = message;
+    flashMessage(message.id);
+  }
+
+  // flashMessage là phương thức để gửi tin nhắn đã được reply về đầu trang
+  void flashMessage(String messageId) {
+    if (messageId.isEmpty) return;
+    _flashTimer?.cancel();
+    _flashMessageId = messageId;
+    notifyListeners();
+    _flashTimer = Timer(const Duration(milliseconds: 1400), () {
+      if (_flashMessageId != messageId) return;
+      _flashMessageId = null;
+      notifyListeners();
+    });
+  }
+
+  // clearReply là phương thức để clear reply
+  void clearReply() {
+    if (_replyingTo == null) return;
+    _replyingTo = null;
+    notifyListeners();
+  }
+
   Future<void> setPinned(ChatMessage message, {required bool pinned}) async {
     try {
       final updated = await _repo.pinMessage(
@@ -195,9 +226,14 @@ class ChatController extends ChangeNotifier {
     _error = null;
     notifyListeners();
     try {
-      final sent = await _repo.sendMessage(roomId, content);
+      final sent = await _repo.sendMessage(
+        roomId,
+        content,
+        replyToId: _replyingTo?.id,
+      );
       // Socket thường echo trước khi POST trả về — cùng id thì không thêm lần 2.
       _upsert(sent, insertIfMissing: true);
+      clearReply();
       await _markLatestRead();
     } on Failure catch (e) {
       _error = e.message;
@@ -234,19 +270,28 @@ class ChatController extends ChangeNotifier {
     _error = null;
     notifyListeners();
     try {
+      final replyId = _replyingTo?.id;
+      var attached = false;
       for (final item in items) {
         final sent = await _repo.sendFileMessage(
           roomId,
           bytes: item.bytes,
           filename: item.filename,
+          replyToId: attached ? null : replyId,
         );
+        attached = true;
         _upsert(sent, insertIfMissing: true);
       }
       final text = _optionalCaption(caption);
       if (text != null) {
-        final sent = await _repo.sendMessage(roomId, text);
+        final sent = await _repo.sendMessage(
+          roomId,
+          text,
+          replyToId: attached ? null : replyId,
+        );
         _upsert(sent, insertIfMissing: true);
       }
+      clearReply();
       await _markLatestRead();
     } on Failure catch (e) {
       _error = e.message;
@@ -267,19 +312,28 @@ class ChatController extends ChangeNotifier {
     _error = null;
     notifyListeners();
     try {
+      final replyId = _replyingTo?.id;
+      var attached = false;
       for (final item in items) {
         final sent = await _repo.sendImageMessage(
           roomId,
           bytes: item.bytes,
           filename: item.filename,
+          replyToId: attached ? null : replyId,
         );
+        attached = true;
         _upsert(sent, insertIfMissing: true);
       }
       final text = _optionalCaption(caption);
       if (text != null) {
-        final sent = await _repo.sendMessage(roomId, text);
+        final sent = await _repo.sendMessage(
+          roomId,
+          text,
+          replyToId: attached ? null : replyId,
+        );
         _upsert(sent, insertIfMissing: true);
       }
+      clearReply();
       await _markLatestRead();
     } on Failure catch (e) {
       _error = e.message;
@@ -306,6 +360,7 @@ class ChatController extends ChangeNotifier {
   /// dispose là phương thức để dispose controller
   @override
   void dispose() {
+    _flashTimer?.cancel();
     _socketSub?.cancel();
     super.dispose();
   }

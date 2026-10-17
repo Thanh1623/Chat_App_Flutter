@@ -50,6 +50,7 @@ class ChatMessage {
     this.fileSizeBytes,
     this.pinned = false,
     this.reactions = const [],
+    this.replyTo,
   });
 
   final String id;
@@ -69,6 +70,7 @@ class ChatMessage {
   final int? fileSizeBytes;
   final bool pinned;
   final List<MessageReaction> reactions;
+  final MessageReplyTo? replyTo;
 
   bool get isAgent => role == 'agent';
   bool get hasImage {
@@ -79,5 +81,29 @@ class ChatMessage {
   bool get hasFile {
     final url = fileUrl?.trim() ?? '';
     return url.isNotEmpty;
+  }
+}
+
+class MessageReplyTo {
+  const MessageReplyTo({
+    required this.id,
+    required this.authorName,
+    this.content = '',
+    this.imageUrl,
+    this.recalled = false,
+  });
+
+  final String id;
+  final String authorName;
+  final String content;
+  final String? imageUrl;
+  final bool recalled;
+
+  String get preview {
+    if (recalled) return 'Tin đã thu hồi';
+    final text = content.trim();
+    if (text.isNotEmpty) return text;
+    if ((imageUrl ?? '').trim().isNotEmpty) return 'Ảnh';
+    return 'Tin nhắn';
   }
 }

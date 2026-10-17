@@ -7,17 +7,23 @@ abstract interface class ChatRepository {
     int limit = 80,
     String? cursor,
   });
-  Future<ChatMessage> sendMessage(String roomId, String content);
+  Future<ChatMessage> sendMessage(
+    String roomId,
+    String content, {
+    String? replyToId,
+  });
   Future<ChatMessage> sendImageMessage(
     String roomId, {
     required List<int> bytes,
     required String filename,
     String? caption,
+    String? replyToId,
   });
   Future<ChatMessage> sendFileMessage(
     String roomId, {
     required List<int> bytes,
     required String filename,
+    String? replyToId,
   });
 
   Future<void> markRead(String roomId, String messageId);
