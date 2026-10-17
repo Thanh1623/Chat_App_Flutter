@@ -28,6 +28,11 @@ abstract interface class ChatRepository {
     required bool pinned,
   });
   Future<List<ChatMessage>> fetchPinned(String roomId);
+  Future<ChatMessage> reactMessage(
+    String roomId,
+    String messageId, {
+    required String emoji,
+  });
 
   /// Tin mới từ Socket. Chỉ room đang mở.
   Stream<ChatMessage> watchMessages(String roomId);

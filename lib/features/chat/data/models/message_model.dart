@@ -18,6 +18,7 @@ class MessageModel {
     this.fileMimeType,
     this.fileSizeBytes,
     this.pinned = false,
+    this.reactions = const [],
   });
 
   final String id;
@@ -36,6 +37,7 @@ class MessageModel {
   final String? fileMimeType;
   final int? fileSizeBytes;
   final bool pinned;
+  final List<MessageReaction> reactions;
   ChatMessage toEntity() => ChatMessage(
     id: id,
     roomId: roomId,
@@ -53,6 +55,7 @@ class MessageModel {
     fileMimeType: fileMimeType,
     fileSizeBytes: fileSizeBytes,
     pinned: pinned,
+    reactions: reactions,
   );
 
   factory MessageModel.fromJson(Map<String, dynamic> json) {
@@ -77,6 +80,36 @@ class MessageModel {
           DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
           DateTime.now(),
       pinned: json['pinned'] == true,
+      reactions: _reactionsFromJson(json['reactions']),
     );
   }
+}
+
+List<MessageReaction> _reactionsFromJson(dynamic raw) {
+  if (raw is! List) return const [];
+  return raw.whereType<Map<String, dynamic>>().map((item) {
+    final usersRaw = item['users'];
+    final users = usersRaw is List
+        ? usersRaw.whereType<Map<String, dynamic>>().map((user) {
+            return ReactionUser(
+              id: user['id']?.toString() ?? '',
+              name: user['name']?.toString() ?? 'Thành viên',
+              avatarUrl: user['avatarUrl']?.toString() ?? '',
+            );
+          }).where((user) => user.id.isNotEmpty).toList()
+        : const <ReactionUser>[];
+    final idsRaw = item['userIds'];
+    final userIds = idsRaw is List
+        ? idsRaw.map((id) => id.toString()).where((id) => id.isNotEmpty).toList()
+        : users.map((user) => user.id).toList();
+    final count = item['count'] is num
+        ? (item['count'] as num).toInt()
+        : int.tryParse(item['count']?.toString() ?? '') ?? userIds.length;
+    return MessageReaction(
+      emoji: item['emoji']?.toString() ?? '',
+      count: count,
+      userIds: userIds,
+      users: users,
+    );
+  }).where((r) => r.emoji.isNotEmpty).toList();
 }

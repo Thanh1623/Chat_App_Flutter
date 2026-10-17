@@ -12,6 +12,17 @@ void main() {
       'content': 'Xin chào',
       'createdAt': '2026-10-09T08:00:00.000Z',
       'pinned': true,
+      'reactions': [
+        {
+          'emoji': '👍',
+          'count': 2,
+          'userIds': ['u1', 'u2'],
+          'users': [
+            {'id': 'u1', 'name': 'An', 'avatarUrl': ''},
+            {'id': 'u2', 'name': 'Bình', 'avatarUrl': ''},
+          ],
+        },
+      ],
     });
 
     expect(parsed.id, 'm1');
@@ -20,5 +31,10 @@ void main() {
     expect(parsed.content, 'Xin chào');
     expect(parsed.toEntity().isAgent, isFalse);
     expect(parsed.toEntity().pinned, isTrue);
+    expect(parsed.toEntity().reactions, hasLength(1));
+    expect(parsed.toEntity().reactions.first.emoji, '👍');
+    expect(parsed.toEntity().reactions.first.isMine('u1'), isTrue);
+    expect(parsed.toEntity().reactions.first.isMine('u9'), isFalse);
+    expect(parsed.toEntity().reactions.first.users.first.name, 'An');
   });
 }

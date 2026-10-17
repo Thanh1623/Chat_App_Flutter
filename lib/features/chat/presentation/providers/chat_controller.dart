@@ -155,6 +155,23 @@ class ChatController extends ChangeNotifier {
     }
   }
 
+  Future<void> toggleReaction(ChatMessage message, String emoji) async {
+    try {
+      final updated = await _repo.reactMessage(
+        roomId,
+        message.id,
+        emoji: emoji,
+      );
+      _upsert(updated, insertIfMissing: false);
+    } on Failure catch (e) {
+      _error = e.message;
+      notifyListeners();
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+    }
+  }
+
   Future<void> setPinned(ChatMessage message, {required bool pinned}) async {
     try {
       final updated = await _repo.pinMessage(

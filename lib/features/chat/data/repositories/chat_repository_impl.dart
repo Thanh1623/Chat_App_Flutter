@@ -126,6 +126,24 @@ class ChatRepositoryImpl implements ChatRepository {
   }
 
   @override
+  Future<ChatMessage> reactMessage(
+    String roomId,
+    String messageId, {
+    required String emoji,
+  }) async {
+    try {
+      final model = await _remote.reactMessage(
+        roomId,
+        messageId,
+        emoji: emoji,
+      );
+      return model.toEntity();
+    } catch (e) {
+      throw mapException(e);
+    }
+  }
+
+  @override
   Future<List<ChatMessage>> fetchPinned(String roomId) async {
     try {
       return await _remote.fetchPinned(roomId);

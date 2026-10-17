@@ -119,6 +119,18 @@ class ChatRemoteDataSource {
   }
 
   /// đây là API để lấy danh sách các tin nhắn đã được pin trong phòng chat
+  Future<MessageModel> reactMessage(
+    String roomId,
+    String messageId, {
+    required String emoji,
+  }) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      ApiEndpoints.messageReactions(roomId, messageId),
+      data: {'emoji': emoji},
+    );
+    return MessageModel.fromJson(response.data ?? {});
+  }
+
   Future<List<ChatMessage>> fetchPinned(String roomId) async {
     final response = await _dio.get<dynamic>(ApiEndpoints.roomPins(roomId));
     final list = response.data is List ? response.data as List : const [];

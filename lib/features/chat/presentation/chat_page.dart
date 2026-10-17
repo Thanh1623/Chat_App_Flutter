@@ -11,6 +11,7 @@ import 'package:chat_app/features/chat/presentation/providers/chat_controller.da
 import 'package:chat_app/features/chat/presentation/widgets/chat_message_avatar.dart';
 import 'package:chat_app/features/chat/presentation/widgets/group_members_sheet.dart';
 import 'package:chat_app/features/chat/presentation/widgets/pinned_messages_sheet.dart';
+import 'package:chat_app/features/chat/presentation/widgets/reaction_users_sheet.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:chat_app/features/conversations/presentation/providers/conversations_provider.dart';
 import 'package:flutter/material.dart';
@@ -179,12 +180,23 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   }
 
   void _togglePin(ChatMessage message) {
+    final chat =
+        ref.read(chatControllerProvider(widget.conversationId).notifier);
     showPinMessageActions(
       context: context,
       message: message,
-      onSetPinned: (pinned) => ref
-          .read(chatControllerProvider(widget.conversationId).notifier)
-          .setPinned(message, pinned: pinned),
+      myId: ref.read(sessionStorageProvider).user?.id,
+      onSetPinned: (pinned) => chat.setPinned(message, pinned: pinned),
+      onReact: (emoji) => chat.toggleReaction(message, emoji),
+    );
+  }
+
+  void _showReactors(ChatMessage message, String emoji) {
+    showReactionUsersSheet(
+      context: context,
+      message: message,
+      initialEmoji: emoji,
+      onOpenUser: _openUserProfile,
     );
   }
 
@@ -291,6 +303,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                   showSenderNames: widget.isGroup,
                   onOpenSenderProfile: _openUserProfile,
                   onPinToggle: _togglePin,
+                  onShowReactors: _showReactors,
                   onRetry: () =>
                       ref.read(chatControllerProvider(roomId).notifier).load(),
                   onLoadMore: () => ref
@@ -344,6 +357,7 @@ class _MessageList extends StatefulWidget {
     required this.showSenderNames,
     required this.onOpenSenderProfile,
     required this.onPinToggle,
+    required this.onShowReactors,
     required this.onRetry,
     required this.onLoadMore,
   });
@@ -355,6 +369,7 @@ class _MessageList extends StatefulWidget {
   final bool showSenderNames;
   final void Function(String userId) onOpenSenderProfile;
   final void Function(ChatMessage message) onPinToggle;
+  final void Function(ChatMessage message, String emoji) onShowReactors;
   final VoidCallback onRetry;
   final VoidCallback onLoadMore;
 
@@ -441,6 +456,7 @@ class _MessageListState extends State<_MessageList> {
             return _MessageBubble(
               key: ValueKey(message.id),
               message: message,
+              myId: widget.myId,
               isMine: isMine,
               avatarUrl: _resolveAvatarUrl(
                 message: message,
@@ -451,6 +467,7 @@ class _MessageListState extends State<_MessageList> {
               showSenderName: widget.showSenderNames,
               onOpenSenderProfile: widget.onOpenSenderProfile,
               onPinToggle: widget.onPinToggle,
+              onShowReactors: widget.onShowReactors,
             );
           },
         ),
@@ -509,19 +526,23 @@ class _MessageBubble extends StatelessWidget {
   const _MessageBubble({
     super.key,
     required this.message,
+    required this.myId,
     required this.isMine,
     required this.avatarUrl,
     required this.showSenderName,
     required this.onOpenSenderProfile,
     required this.onPinToggle,
+    required this.onShowReactors,
   });
 
   final ChatMessage message;
+  final String? myId;
   final bool isMine;
   final String avatarUrl;
   final bool showSenderName;
   final void Function(String userId) onOpenSenderProfile;
   final void Function(ChatMessage message) onPinToggle;
+  final void Function(ChatMessage message, String emoji) onShowReactors;
 
   @override
   Widget build(BuildContext context) {
@@ -621,6 +642,26 @@ class _MessageBubble extends StatelessWidget {
                         ),
                     ],
                   ),
+                  if (message.reactions.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Wrap(
+                        spacing: 4,
+                        runSpacing: 4,
+                        alignment: isMine
+                            ? WrapAlignment.end
+                            : WrapAlignment.start,
+                        children: [
+                          for (final reaction in message.reactions)
+                            _ReactionChip(
+                              reaction: reaction,
+                              mine: reaction.isMine(myId),
+                              onTap: () =>
+                                  onShowReactors(message, reaction.emoji),
+                            ),
+                        ],
+                      ),
+                    ),
                   Padding(
                     padding: const EdgeInsets.only(top: 2, left: 4, right: 4),
                     child: Text(
@@ -798,6 +839,44 @@ class _BubbleBody extends StatelessWidget {
         insetPadding: const EdgeInsets.all(16),
         child: InteractiveViewer(
           child: Image.network(url, fit: BoxFit.contain),
+        ),
+      ),
+    );
+  }
+}
+
+class _ReactionChip extends StatelessWidget {
+  const _ReactionChip({
+    required this.reaction,
+    required this.mine,
+    required this.onTap,
+  });
+
+  final MessageReaction reaction;
+  final bool mine;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
+    return Material(
+      color: mine ? primary.withValues(alpha: 0.14) : Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: mine ? primary.withValues(alpha: 0.45) : Colors.black12,
+            ),
+          ),
+          child: Text(
+            '${reaction.emoji} ${reaction.count}',
+            style: const TextStyle(fontSize: 12, height: 1.1),
+          ),
         ),
       ),
     );

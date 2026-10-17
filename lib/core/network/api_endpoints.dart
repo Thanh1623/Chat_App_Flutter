@@ -28,4 +28,6 @@ abstract final class ApiEndpoints {
 
   /// đây là API để lấy danh sách các tin nhắn đã được pin trong phòng chat
   static String roomPins(String roomId) => '/rooms/$roomId/pins';
+  static String messageReactions(String roomId, String messageId) =>
+      '/rooms/$roomId/messages/$messageId/reactions';
 }

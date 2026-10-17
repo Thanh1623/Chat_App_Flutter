@@ -32,7 +32,9 @@ String pinnedMessageTime(DateTime createdAt) {
 Future<void> showPinMessageActions({
   required BuildContext context,
   required ChatMessage message,
+  required String? myId,
   required void Function(bool pinned) onSetPinned,
+  required void Function(String emoji) onReact,
 }) async {
   HapticFeedback.mediumImpact();
   final pinned = message.pinned;
@@ -65,6 +67,23 @@ Future<void> showPinMessageActions({
                   const SizedBox(height: 14),
                   _PinPreviewChip(message: message),
                   const SizedBox(height: 14),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      for (final emoji in reactionEmojis)
+                        _ReactionPickButton(
+                          emoji: emoji,
+                          selected: message.reactions.any(
+                            (r) => r.emoji == emoji && r.isMine(myId),
+                          ),
+                          onTap: () {
+                            Navigator.pop(ctx);
+                            onReact(emoji);
+                          },
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton.icon(
@@ -86,6 +105,38 @@ Future<void> showPinMessageActions({
       );
     },
   );
+}
+
+class _ReactionPickButton extends StatelessWidget {
+  const _ReactionPickButton({
+    required this.emoji,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String emoji;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
+    return Material(
+      color: selected ? primary.withValues(alpha: 0.14) : const Color(0xFFF4F6F8),
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: SizedBox(
+          width: 42,
+          height: 42,
+          child: Center(
+            child: Text(emoji, style: const TextStyle(fontSize: 22)),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 Future<void> showPinnedMessageDetail({

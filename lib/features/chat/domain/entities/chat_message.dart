@@ -1,3 +1,36 @@
+class ReactionUser {
+  const ReactionUser({
+    required this.id,
+    required this.name,
+    this.avatarUrl = '',
+  });
+
+  final String id;
+  final String name;
+  final String avatarUrl;
+}
+
+class MessageReaction {
+  const MessageReaction({
+    required this.emoji,
+    required this.count,
+    this.userIds = const [],
+    this.users = const [],
+  });
+
+  final String emoji;
+  final int count;
+  final List<String> userIds;
+  final List<ReactionUser> users;
+
+  bool isMine(String? myId) {
+    final id = myId?.trim() ?? '';
+    return id.isNotEmpty && userIds.contains(id);
+  }
+}
+
+const reactionEmojis = ['👍', '❤️', '😂', '😮', '😢', '🔥'];
+
 class ChatMessage {
   const ChatMessage({
     required this.id,
@@ -16,6 +49,7 @@ class ChatMessage {
     this.fileMimeType,
     this.fileSizeBytes,
     this.pinned = false,
+    this.reactions = const [],
   });
 
   final String id;
@@ -34,6 +68,7 @@ class ChatMessage {
   final String? fileMimeType;
   final int? fileSizeBytes;
   final bool pinned;
+  final List<MessageReaction> reactions;
 
   bool get isAgent => role == 'agent';
   bool get hasImage {
