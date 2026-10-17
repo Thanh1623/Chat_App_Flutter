@@ -10,6 +10,7 @@ import 'package:chat_app/features/chat/presentation/chat_image_send.dart';
 import 'package:chat_app/features/chat/presentation/providers/chat_controller.dart';
 import 'package:chat_app/features/chat/presentation/widgets/chat_message_avatar.dart';
 import 'package:chat_app/features/chat/presentation/widgets/group_members_sheet.dart';
+import 'package:chat_app/features/chat/presentation/widgets/pinned_messages_sheet.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:chat_app/features/conversations/presentation/providers/conversations_provider.dart';
 import 'package:flutter/material.dart';
@@ -177,6 +178,16 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     );
   }
 
+  void _togglePin(ChatMessage message) {
+    showPinMessageActions(
+      context: context,
+      message: message,
+      onSetPinned: (pinned) => ref
+          .read(chatControllerProvider(widget.conversationId).notifier)
+          .setPinned(message, pinned: pinned),
+    );
+  }
+
   Future<void> _confirmDeleteGroup() async {
     final ok = await showConfirmDialog(
       context: context,
@@ -265,6 +276,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       ),
       body: Column(
         children: [
+          PinnedMessagesBanner(roomId: roomId),
           Expanded(
             child: Consumer(
               builder: (context, ref, _) {
@@ -278,6 +290,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                   avatarByUserId: _avatarByUserId,
                   showSenderNames: widget.isGroup,
                   onOpenSenderProfile: _openUserProfile,
+                  onPinToggle: _togglePin,
                   onRetry: () =>
                       ref.read(chatControllerProvider(roomId).notifier).load(),
                   onLoadMore: () => ref
@@ -330,6 +343,7 @@ class _MessageList extends StatefulWidget {
     required this.avatarByUserId,
     required this.showSenderNames,
     required this.onOpenSenderProfile,
+    required this.onPinToggle,
     required this.onRetry,
     required this.onLoadMore,
   });
@@ -340,6 +354,7 @@ class _MessageList extends StatefulWidget {
   final Map<String, String> avatarByUserId;
   final bool showSenderNames;
   final void Function(String userId) onOpenSenderProfile;
+  final void Function(ChatMessage message) onPinToggle;
   final VoidCallback onRetry;
   final VoidCallback onLoadMore;
 
@@ -349,6 +364,7 @@ class _MessageList extends StatefulWidget {
 
 class _MessageListState extends State<_MessageList> {
   final _scroll = ScrollController();
+  bool _showJumpLatest = false;
 
   @override
   void initState() {
@@ -367,8 +383,22 @@ class _MessageListState extends State<_MessageList> {
   void _onScroll() {
     if (!_scroll.hasClients) return;
     final position = _scroll.position;
+    // reverse: true — pixels=0 là tin mới nhất; kéo lên trên thì pixels tăng.
+    final showJump = position.pixels > 240;
+    if (showJump != _showJumpLatest) {
+      setState(() => _showJumpLatest = showJump);
+    }
     if (position.pixels < position.maxScrollExtent - 240) return;
     widget.onLoadMore();
+  }
+
+  void _jumpToLatest() {
+    if (!_scroll.hasClients) return;
+    _scroll.animateTo(
+      0,
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOutCubic,
+    );
   }
 
   @override
@@ -385,40 +415,78 @@ class _MessageListState extends State<_MessageList> {
     }
 
     final extra = chat.isLoadingMore ? 1 : 0;
-    return ListView.builder(
-      controller: _scroll,
-      reverse: true,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      itemCount: chat.messages.length + extra,
-      itemBuilder: (context, index) {
-        if (index >= chat.messages.length) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(vertical: 16),
-            child: Center(
-              child: SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
+    final primary = Theme.of(context).colorScheme.primary;
+    return Stack(
+      children: [
+        ListView.builder(
+          controller: _scroll,
+          reverse: true,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          itemCount: chat.messages.length + extra,
+          itemBuilder: (context, index) {
+            if (index >= chat.messages.length) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(vertical: 16),
+                child: Center(
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+              );
+            }
+            final message = chat.messages[index];
+            final isMine = widget.myId != null && message.userId == widget.myId;
+            return _MessageBubble(
+              key: ValueKey(message.id),
+              message: message,
+              isMine: isMine,
+              avatarUrl: _resolveAvatarUrl(
+                message: message,
+                isMine: isMine,
+                myAvatarUrl: widget.myAvatarUrl,
+                avatarByUserId: widget.avatarByUserId,
+              ),
+              showSenderName: widget.showSenderNames,
+              onOpenSenderProfile: widget.onOpenSenderProfile,
+              onPinToggle: widget.onPinToggle,
+            );
+          },
+        ),
+        Positioned(
+          right: 12,
+          bottom: 12,
+          child: IgnorePointer(
+            ignoring: !_showJumpLatest,
+            child: AnimatedOpacity(
+              opacity: _showJumpLatest ? 1 : 0,
+              duration: const Duration(milliseconds: 180),
+              child: Material(
+                color: Colors.white,
+                elevation: 3,
+                shadowColor: Colors.black26,
+                shape: const CircleBorder(),
+                child: Tooltip(
+                  message: 'Tin mới nhất',
+                  child: InkWell(
+                    customBorder: const CircleBorder(),
+                    onTap: _jumpToLatest,
+                    child: SizedBox(
+                      width: 40,
+                      height: 40,
+                      child: Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        color: primary,
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ),
-          );
-        }
-        final message = chat.messages[index];
-        final isMine = widget.myId != null && message.userId == widget.myId;
-        return _MessageBubble(
-          key: ValueKey(message.id),
-          message: message,
-          isMine: isMine,
-          avatarUrl: _resolveAvatarUrl(
-            message: message,
-            isMine: isMine,
-            myAvatarUrl: widget.myAvatarUrl,
-            avatarByUserId: widget.avatarByUserId,
           ),
-          showSenderName: widget.showSenderNames,
-          onOpenSenderProfile: widget.onOpenSenderProfile,
-        );
-      },
+        ),
+      ],
     );
   }
 
@@ -445,6 +513,7 @@ class _MessageBubble extends StatelessWidget {
     required this.avatarUrl,
     required this.showSenderName,
     required this.onOpenSenderProfile,
+    required this.onPinToggle,
   });
 
   final ChatMessage message;
@@ -452,6 +521,7 @@ class _MessageBubble extends StatelessWidget {
   final String avatarUrl;
   final bool showSenderName;
   final void Function(String userId) onOpenSenderProfile;
+  final void Function(ChatMessage message) onPinToggle;
 
   @override
   Widget build(BuildContext context) {
@@ -511,13 +581,54 @@ class _MessageBubble extends StatelessWidget {
                         ),
                       ),
                     ),
-                  _BubbleBody(message: message, isMine: isMine),
+                  Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      GestureDetector(
+                        onLongPress: () => onPinToggle(message),
+                        child: _BubbleBody(message: message, isMine: isMine),
+                      ),
+                      if (message.pinned)
+                        Positioned(
+                          top: -5,
+                          right: isMine ? -5 : null,
+                          left: isMine ? null : -5,
+                          child: Container(
+                            width: 18,
+                            height: 18,
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.primary,
+                              shape: BoxShape.circle,
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Colors.black26,
+                                  blurRadius: 3,
+                                  offset: Offset(0, 1),
+                                ),
+                              ],
+                            ),
+                            child: Center(
+                              child: Transform.rotate(
+                                angle: 0.55,
+                                child: const Icon(
+                                  Icons.push_pin,
+                                  size: 10,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                   Padding(
                     padding: const EdgeInsets.only(top: 2, left: 4, right: 4),
                     child: Text(
                       timeLabel,
-                      style:
-                          const TextStyle(fontSize: 10, color: Colors.black45),
+                      style: const TextStyle(
+                        fontSize: 10,
+                        color: Colors.black45,
+                      ),
                     ),
                   ),
                 ],

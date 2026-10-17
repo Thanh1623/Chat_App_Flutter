@@ -17,6 +17,7 @@ class MessageModel {
     this.fileName,
     this.fileMimeType,
     this.fileSizeBytes,
+    this.pinned = false,
   });
 
   final String id;
@@ -34,24 +35,25 @@ class MessageModel {
   final String? fileName;
   final String? fileMimeType;
   final int? fileSizeBytes;
-
+  final bool pinned;
   ChatMessage toEntity() => ChatMessage(
-        id: id,
-        roomId: roomId,
-        userId: userId,
-        authorName: authorName,
-        authorAvatarUrl: authorAvatarUrl,
-        role: role,
-        content: content,
-        createdAt: createdAt,
-        imageId: imageId,
-        imageUrl: imageUrl,
-        fileId: fileId,
-        fileUrl: fileUrl,
-        fileName: fileName,
-        fileMimeType: fileMimeType,
-        fileSizeBytes: fileSizeBytes,
-      );
+    id: id,
+    roomId: roomId,
+    userId: userId,
+    authorName: authorName,
+    authorAvatarUrl: authorAvatarUrl,
+    role: role,
+    content: content,
+    createdAt: createdAt,
+    imageId: imageId,
+    imageUrl: imageUrl,
+    fileId: fileId,
+    fileUrl: fileUrl,
+    fileName: fileName,
+    fileMimeType: fileMimeType,
+    fileSizeBytes: fileSizeBytes,
+    pinned: pinned,
+  );
 
   factory MessageModel.fromJson(Map<String, dynamic> json) {
     return MessageModel(
@@ -71,8 +73,10 @@ class MessageModel {
       fileSizeBytes: json['fileSizeBytes'] is num
           ? (json['fileSizeBytes'] as num).toInt()
           : int.tryParse(json['fileSizeBytes']?.toString() ?? ''),
-      createdAt: DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
+      createdAt:
+          DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
           DateTime.now(),
+      pinned: json['pinned'] == true,
     );
   }
 }

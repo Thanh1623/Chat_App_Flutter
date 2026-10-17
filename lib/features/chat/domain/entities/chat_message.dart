@@ -15,6 +15,7 @@ class ChatMessage {
     this.fileName,
     this.fileMimeType,
     this.fileSizeBytes,
+    this.pinned = false,
   });
 
   final String id;
@@ -32,6 +33,7 @@ class ChatMessage {
   final String? fileName;
   final String? fileMimeType;
   final int? fileSizeBytes;
+  final bool pinned;
 
   bool get isAgent => role == 'agent';
   bool get hasImage {

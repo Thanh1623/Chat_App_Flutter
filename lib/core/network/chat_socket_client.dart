@@ -85,6 +85,11 @@ class ChatSocketClient {
         /// _messages.add là phương thức để thêm đối tượng json vào stream
         _messages.add(json);
       })
+      ..on('message.updated', (data) {
+        final json = _asJsonMap(data);
+        if (json == null) return;
+        _messages.add(json);
+      })
       ..connect();
   }
 

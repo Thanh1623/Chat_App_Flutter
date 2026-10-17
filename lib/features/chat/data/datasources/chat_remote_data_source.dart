@@ -104,6 +104,30 @@ class ChatRemoteDataSource {
       data: {'messageId': messageId},
     );
   }
+
+  /// đây là API để pin một tin nhắn trong phòng chat
+  Future<MessageModel> pinMessage(
+    String roomId,
+    String messageId, {
+    required bool pinned,
+  }) async {
+    final response = await _dio.patch<Map<String, dynamic>>(
+      ApiEndpoints.pinMessage(roomId, messageId),
+      data: {'pinned': pinned},
+    );
+    return MessageModel.fromJson(response.data ?? {});
+  }
+
+  /// đây là API để lấy danh sách các tin nhắn đã được pin trong phòng chat
+  Future<List<ChatMessage>> fetchPinned(String roomId) async {
+    final response = await _dio.get<dynamic>(ApiEndpoints.roomPins(roomId));
+    final list = response.data is List ? response.data as List : const [];
+    return list
+        .whereType<Map<String, dynamic>>()
+        .map(MessageModel.fromJson)
+        .map((m) => m.toEntity())
+        .toList();
+  }
 }
 
 MessagesPage parseMessagesPage(dynamic data) {

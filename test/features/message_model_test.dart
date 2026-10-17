@@ -11,6 +11,7 @@ void main() {
       'role': 'user',
       'content': 'Xin chào',
       'createdAt': '2026-10-09T08:00:00.000Z',
+      'pinned': true,
     });
 
     expect(parsed.id, 'm1');
@@ -18,5 +19,6 @@ void main() {
     expect(parsed.userId, 'u1');
     expect(parsed.content, 'Xin chào');
     expect(parsed.toEntity().isAgent, isFalse);
+    expect(parsed.toEntity().pinned, isTrue);
   });
 }

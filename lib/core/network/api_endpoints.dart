@@ -21,4 +21,11 @@ abstract final class ApiEndpoints {
   static const roomsDirect = '/rooms/direct';
   static const createRoom = '/rooms'; // POST
   static String deleteRoom(String id) => '/rooms/$id';
+
+  /// đây là API để pin một tin nhắn trong phòng chat
+  static String pinMessage(String roomId, String messageId) =>
+      '/rooms/$roomId/messages/$messageId/pin';
+
+  /// đây là API để lấy danh sách các tin nhắn đã được pin trong phòng chat
+  static String roomPins(String roomId) => '/rooms/$roomId/pins';
 }

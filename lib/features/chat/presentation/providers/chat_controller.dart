@@ -37,7 +37,10 @@ class ChatController extends ChangeNotifier {
   /// Giữ subscription để lúc thoát phòng thì cancel (tránh leak).
   StreamSubscription<ChatMessage>? _socketSub;
 
+  List<ChatMessage> _pinned = [];
+
   List<ChatMessage> get messages => _messages;
+  List<ChatMessage> get pinned => _pinned;
   bool get isLoading => _loading;
   bool get isLoadingMore => _loadingMore;
   bool get isSending => _sending;
@@ -56,6 +59,11 @@ class ChatController extends ChangeNotifier {
       _messages = page.items.reversed.toList();
       _hasMore = page.hasMore;
       _nextCursor = page.nextCursor;
+      try {
+        _pinned = await _repo.fetchPinned(roomId);
+      } catch (_) {
+        _pinned = []; // ponytail: banner ghim không chặn chat
+      }
       await _markLatestRead();
       _startRealtime();
     } on Failure catch (e) {
@@ -109,19 +117,59 @@ class ChatController extends ChangeNotifier {
     _socketSub = _repo.watchMessages(roomId).listen(_onSocketMessage);
   }
 
-  /// _onSocketMessage là phương thức để xử lý tin nhắn từ server
   void _onSocketMessage(ChatMessage incoming) {
-    _addIfNew(incoming);
-    _markLatestRead();
+    if (incoming.id.isEmpty) return;
+    final isNew = !_messages.any((m) => m.id == incoming.id);
+    _upsert(incoming, insertIfMissing: true);
+    if (isNew) _markLatestRead();
   }
 
-  /// _addIfNew là phương thức để thêm tin nhắn mới vào danh sách tin nhắn
-  /// chống duplicate
-  void _addIfNew(ChatMessage incoming) {
+  void _upsert(ChatMessage incoming, {required bool insertIfMissing}) {
     if (incoming.id.isEmpty) return;
-    if (_messages.any((m) => m.id == incoming.id)) return;
-    _messages = [incoming, ..._messages];
+    final i = _messages.indexWhere((m) => m.id == incoming.id);
+    if (i >= 0) {
+      _messages = [..._messages]..[i] = incoming;
+    } else if (insertIfMissing) {
+      // ponytail: ghim tin ngoài trang đang load không được nhảy lên đầu list
+      final oldest = _messages.isEmpty ? null : _messages.last;
+      final olderThanPage =
+          oldest != null && incoming.createdAt.isBefore(oldest.createdAt);
+      if (!olderThanPage) {
+        _messages = [incoming, ..._messages];
+      }
+    }
+    _syncPinned(incoming);
     notifyListeners();
+  }
+
+  void _syncPinned(ChatMessage message) {
+    if (message.pinned) {
+      final i = _pinned.indexWhere((p) => p.id == message.id);
+      if (i >= 0) {
+        _pinned = [..._pinned]..[i] = message;
+      } else {
+        _pinned = [message, ..._pinned];
+      }
+    } else {
+      _pinned = _pinned.where((p) => p.id != message.id).toList();
+    }
+  }
+
+  Future<void> setPinned(ChatMessage message, {required bool pinned}) async {
+    try {
+      final updated = await _repo.pinMessage(
+        roomId,
+        message.id,
+        pinned: pinned,
+      );
+      _upsert(updated, insertIfMissing: false);
+    } on Failure catch (e) {
+      _error = e.message;
+      notifyListeners();
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+    }
   }
 
   /// send là phương thức để gửi tin nhắn tới server
@@ -132,7 +180,7 @@ class ChatController extends ChangeNotifier {
     try {
       final sent = await _repo.sendMessage(roomId, content);
       // Socket thường echo trước khi POST trả về — cùng id thì không thêm lần 2.
-      _addIfNew(sent);
+      _upsert(sent, insertIfMissing: true);
       await _markLatestRead();
     } on Failure catch (e) {
       _error = e.message;
@@ -175,12 +223,12 @@ class ChatController extends ChangeNotifier {
           bytes: item.bytes,
           filename: item.filename,
         );
-        _addIfNew(sent);
+        _upsert(sent, insertIfMissing: true);
       }
       final text = _optionalCaption(caption);
       if (text != null) {
         final sent = await _repo.sendMessage(roomId, text);
-        _addIfNew(sent);
+        _upsert(sent, insertIfMissing: true);
       }
       await _markLatestRead();
     } on Failure catch (e) {
@@ -208,12 +256,12 @@ class ChatController extends ChangeNotifier {
           bytes: item.bytes,
           filename: item.filename,
         );
-        _addIfNew(sent);
+        _upsert(sent, insertIfMissing: true);
       }
       final text = _optionalCaption(caption);
       if (text != null) {
         final sent = await _repo.sendMessage(roomId, text);
-        _addIfNew(sent);
+        _upsert(sent, insertIfMissing: true);
       }
       await _markLatestRead();
     } on Failure catch (e) {

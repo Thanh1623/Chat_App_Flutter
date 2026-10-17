@@ -108,6 +108,33 @@ class ChatRepositoryImpl implements ChatRepository {
   }
 
   @override
+  Future<ChatMessage> pinMessage(
+    String roomId,
+    String messageId, {
+    required bool pinned,
+  }) async {
+    try {
+      final model = await _remote.pinMessage(
+        roomId,
+        messageId,
+        pinned: pinned,
+      );
+      return model.toEntity();
+    } catch (e) {
+      throw mapException(e);
+    }
+  }
+
+  @override
+  Future<List<ChatMessage>> fetchPinned(String roomId) async {
+    try {
+      return await _remote.fetchPinned(roomId);
+    } catch (e) {
+      throw mapException(e);
+    }
+  }
+
+  @override
   /// Xem tin nhắn từ socket
   Stream<ChatMessage> watchMessages(String roomId) {
     // _socket.messages là stream của tin nhắn từ socket

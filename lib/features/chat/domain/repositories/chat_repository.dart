@@ -22,6 +22,13 @@ abstract interface class ChatRepository {
 
   Future<void> markRead(String roomId, String messageId);
 
+  Future<ChatMessage> pinMessage(
+    String roomId,
+    String messageId, {
+    required bool pinned,
+  });
+  Future<List<ChatMessage>> fetchPinned(String roomId);
+
   /// Tin mới từ Socket. Chỉ room đang mở.
   Stream<ChatMessage> watchMessages(String roomId);
 }
