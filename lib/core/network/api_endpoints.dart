@@ -10,6 +10,7 @@ abstract final class ApiEndpoints {
   static String roomImages(String roomId) => '/rooms/$roomId/images';
   static String roomFiles(String roomId) => '/rooms/$roomId/files';
   static String markRoomRead(String roomId) => '/rooms/$roomId/read';
+  static String roomReads(String roomId) => '/rooms/$roomId/reads';
 
   static const health = '/health';
 

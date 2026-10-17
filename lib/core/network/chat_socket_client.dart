@@ -15,8 +15,10 @@ class ChatSocketClient {
 
   /// messages là stream của tin nhắn được gửi từ server
   final _messages = StreamController<Map<String, dynamic>>.broadcast();
+  final _reads = StreamController<Map<String, dynamic>>.broadcast();
 
   Stream<Map<String, dynamic>> get messages => _messages.stream;
+  Stream<Map<String, dynamic>> get reads => _reads.stream;
 
   String? _token;
 
@@ -89,6 +91,12 @@ class ChatSocketClient {
         final json = _asJsonMap(data);
         if (json == null) return;
         _messages.add(json);
+      })
+      ..on('room.reads', (data) {
+        // Socket.IO spreads a raw array as multiple args — BE sends { roomId, reads }.
+        final json = _asJsonMap(data);
+        if (json == null) return;
+        _reads.add(json);
       })
       ..connect();
   }

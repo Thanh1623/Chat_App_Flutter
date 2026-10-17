@@ -4,6 +4,7 @@ import 'package:chat_app/features/chat/data/datasources/chat_remote_data_source.
 import 'package:chat_app/features/chat/data/models/message_model.dart';
 import 'package:chat_app/features/chat/domain/entities/chat_message.dart';
 import 'package:chat_app/features/chat/domain/entities/messages_page.dart';
+import 'package:chat_app/features/chat/domain/entities/room_read.dart';
 import 'package:chat_app/features/chat/domain/repositories/chat_repository.dart';
 
 class ChatRepositoryImpl implements ChatRepository {
@@ -111,9 +112,18 @@ class ChatRepositoryImpl implements ChatRepository {
   }
 
   @override
-  Future<void> markRead(String roomId, String messageId) async {
+  Future<List<RoomRead>> markRead(String roomId, String messageId) async {
     try {
-      await _remote.markRead(roomId, messageId);
+      return await _remote.markRead(roomId, messageId);
+    } catch (e) {
+      throw mapException(e);
+    }
+  }
+
+  @override
+  Future<List<RoomRead>> fetchReads(String roomId) async {
+    try {
+      return await _remote.fetchReads(roomId);
     } catch (e) {
       throw mapException(e);
     }
@@ -195,5 +205,15 @@ class ChatRepositoryImpl implements ChatRepository {
         .where((json) => json['roomId']?.toString() == roomId)
         .map(MessageModel.fromJson)
         .map((model) => model.toEntity());
+  }
+
+  @override
+  Stream<List<RoomRead>> watchReads(String roomId) {
+    return _socket.reads
+        .where((json) {
+          final id = json['roomId']?.toString();
+          return id == null || id.isEmpty || id == roomId;
+        })
+        .map((json) => parseRoomReads(json['reads'] ?? json));
   }
 }

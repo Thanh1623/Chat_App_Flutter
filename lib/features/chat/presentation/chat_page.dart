@@ -4,6 +4,7 @@ import 'package:chat_app/features/auth/presentation/providers/auth_controller.da
 import 'package:chat_app/core/widgets/confirm_dialog.dart';
 import 'package:chat_app/core/widgets/error_view.dart';
 import 'package:chat_app/features/chat/domain/entities/chat_message.dart';
+import 'package:chat_app/features/chat/domain/entities/room_read.dart';
 import 'package:chat_app/features/chat/presentation/chat_file_format.dart';
 import 'package:chat_app/features/chat/presentation/chat_file_send.dart';
 import 'package:chat_app/features/chat/presentation/chat_image_send.dart';
@@ -333,6 +334,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                   myAvatarUrl: myAvatar,
                   avatarByUserId: _avatarByUserId,
                   showSenderNames: widget.isGroup,
+                  isGroup: widget.isGroup,
                   onOpenSenderProfile: _openUserProfile,
                   onPinToggle: _togglePin,
                   onShowReactors: _showReactors,
@@ -391,6 +393,7 @@ class _MessageList extends StatefulWidget {
     required this.myAvatarUrl,
     required this.avatarByUserId,
     required this.showSenderNames,
+    required this.isGroup,
     required this.onOpenSenderProfile,
     required this.onPinToggle,
     required this.onShowReactors,
@@ -403,6 +406,7 @@ class _MessageList extends StatefulWidget {
   final String myAvatarUrl;
   final Map<String, String> avatarByUserId;
   final bool showSenderNames;
+  final bool isGroup;
   final void Function(String userId) onOpenSenderProfile;
   final void Function(ChatMessage message) onPinToggle;
   final void Function(ChatMessage message, String emoji) onShowReactors;
@@ -534,6 +538,8 @@ class _MessageListState extends State<_MessageList> {
               onPinToggle: widget.onPinToggle,
               onShowReactors: widget.onShowReactors,
               onOpenReply: widget.chat.flashMessage,
+              readers: chat.readersOf(message.id),
+              isGroup: widget.isGroup,
             );
           },
         ),
@@ -601,6 +607,8 @@ class _MessageBubble extends StatelessWidget {
     required this.onPinToggle,
     required this.onShowReactors,
     required this.onOpenReply,
+    required this.readers,
+    required this.isGroup,
   });
 
   final ChatMessage message;
@@ -613,6 +621,8 @@ class _MessageBubble extends StatelessWidget {
   final void Function(ChatMessage message) onPinToggle;
   final void Function(ChatMessage message, String emoji) onShowReactors;
   final void Function(String messageId) onOpenReply;
+  final List<RoomRead> readers;
+  final bool isGroup;
 
   @override
   Widget build(BuildContext context) {
@@ -754,10 +764,66 @@ class _MessageBubble extends StatelessWidget {
                       ),
                     ),
                   ),
+                  if (isMine && readers.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 3),
+                      child: _ReadReceipt(
+                        readers: readers,
+                        isGroup: isGroup,
+                      ),
+                    ),
                 ],
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ReadReceipt extends StatelessWidget {
+  const _ReadReceipt({
+    required this.readers,
+    required this.isGroup,
+  });
+
+  final List<RoomRead> readers;
+  final bool isGroup;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!isGroup) {
+      return const Text(
+        'Đã xem',
+        style: TextStyle(fontSize: 11, color: Colors.black45),
+      );
+    }
+
+    final shown = readers.take(3).toList();
+    final extra = readers.length - shown.length;
+    return Tooltip(
+      message: readers.map((r) => r.name).join(', '),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var i = 0; i < shown.length; i++)
+            Padding(
+              padding: EdgeInsets.only(left: i == 0 ? 0 : 2),
+              child: ChatMessageAvatar(
+                displayName: shown[i].name,
+                avatarUrl: shown[i].avatarUrl,
+                radius: 8,
+              ),
+            ),
+          if (extra > 0)
+            Padding(
+              padding: const EdgeInsets.only(left: 4),
+              child: Text(
+                '+$extra',
+                style: const TextStyle(fontSize: 10, color: Colors.black45),
+              ),
+            ),
         ],
       ),
     );

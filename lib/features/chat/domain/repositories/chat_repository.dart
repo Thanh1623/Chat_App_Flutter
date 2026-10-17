@@ -1,5 +1,6 @@
 import 'package:chat_app/features/chat/domain/entities/chat_message.dart';
 import 'package:chat_app/features/chat/domain/entities/messages_page.dart';
+import 'package:chat_app/features/chat/domain/entities/room_read.dart';
 
 abstract interface class ChatRepository {
   Future<MessagesPage> fetchMessages(
@@ -26,7 +27,8 @@ abstract interface class ChatRepository {
     String? replyToId,
   });
 
-  Future<void> markRead(String roomId, String messageId);
+  Future<List<RoomRead>> markRead(String roomId, String messageId);
+  Future<List<RoomRead>> fetchReads(String roomId);
 
   Future<ChatMessage> pinMessage(
     String roomId,
@@ -44,4 +46,5 @@ abstract interface class ChatRepository {
 
   /// Tin mới từ Socket. Chỉ room đang mở.
   Stream<ChatMessage> watchMessages(String roomId);
+  Stream<List<RoomRead>> watchReads(String roomId);
 }

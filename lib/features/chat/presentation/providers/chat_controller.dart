@@ -5,6 +5,7 @@ import 'package:chat_app/core/network/chat_socket_client.dart';
 import 'package:chat_app/core/storage/session_storage.dart';
 import 'package:chat_app/features/chat/data/providers/chat_repository_provider.dart';
 import 'package:chat_app/features/chat/domain/entities/chat_message.dart';
+import 'package:chat_app/features/chat/domain/entities/room_read.dart';
 import 'package:chat_app/features/chat/domain/repositories/chat_repository.dart';
 import 'package:chat_app/features/conversations/presentation/providers/conversations_provider.dart';
 import 'package:flutter/foundation.dart';
@@ -36,10 +37,12 @@ class ChatController extends ChangeNotifier {
 
   /// Giữ subscription để lúc thoát phòng thì cancel (tránh leak).
   StreamSubscription<ChatMessage>? _socketSub;
+  StreamSubscription<List<RoomRead>>? _readsSub;
   Timer? _flashTimer;
   String? _flashMessageId;
 
   List<ChatMessage> _pinned = [];
+  List<RoomRead> _reads = [];
   ChatMessage? _replyingTo;
 
   List<ChatMessage> get messages => _messages;
@@ -68,6 +71,11 @@ class ChatController extends ChangeNotifier {
         _pinned = await _repo.fetchPinned(roomId);
       } catch (_) {
         _pinned = []; // ponytail: banner ghim không chặn chat
+      }
+      try {
+        _reads = await _repo.fetchReads(roomId);
+      } catch (_) {
+        _reads = [];
       }
       await _markLatestRead();
       _startRealtime();
@@ -120,6 +128,25 @@ class ChatController extends ChangeNotifier {
 
     _socketSub?.cancel();
     _socketSub = _repo.watchMessages(roomId).listen(_onSocketMessage);
+    _readsSub?.cancel();
+    _readsSub = _repo.watchReads(roomId).listen(_applyReads);
+  }
+
+  void _applyReads(List<RoomRead> reads) {
+    _reads = reads;
+    notifyListeners();
+  }
+
+  List<RoomRead> readersOf(String messageId) {
+    if (messageId.isEmpty) return const [];
+    final myId = _ref.read(sessionStorageProvider).user?.id;
+    return _reads
+        .where(
+          (item) =>
+              item.lastReadMessageId == messageId &&
+              (myId == null || item.userId != myId),
+        )
+        .toList();
   }
 
   void _onSocketMessage(ChatMessage incoming) {
@@ -385,7 +412,7 @@ class ChatController extends ChangeNotifier {
     final latest = _messages.first;
     if (latest.id.isEmpty) return;
     try {
-      await _repo.markRead(roomId, latest.id);
+      _reads = await _repo.markRead(roomId, latest.id);
       _ref.read(conversationsInboxProvider.notifier).refreshInbox();
     } catch (_) {
       // ponytail: read receipt không chặn chat
@@ -397,6 +424,7 @@ class ChatController extends ChangeNotifier {
   void dispose() {
     _flashTimer?.cancel();
     _socketSub?.cancel();
+    _readsSub?.cancel();
     super.dispose();
   }
 }

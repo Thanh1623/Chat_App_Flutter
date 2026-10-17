@@ -6,6 +6,7 @@ import 'package:chat_app/features/chat/data/models/room_file_model.dart';
 import 'package:chat_app/features/chat/data/models/room_image_model.dart';
 import 'package:chat_app/features/chat/domain/entities/chat_message.dart';
 import 'package:chat_app/features/chat/domain/entities/messages_page.dart';
+import 'package:chat_app/features/chat/domain/entities/room_read.dart';
 import 'package:dio/dio.dart';
 
 class ChatRemoteDataSource {
@@ -102,11 +103,17 @@ class ChatRemoteDataSource {
     return RoomFileModel.fromJson(response.data ?? {});
   }
 
-  Future<void> markRead(String roomId, String messageId) async {
-    await _dio.post<void>(
+  Future<List<RoomRead>> markRead(String roomId, String messageId) async {
+    final response = await _dio.post<dynamic>(
       ApiEndpoints.markRoomRead(roomId),
       data: {'messageId': messageId},
     );
+    return parseRoomReads(response.data);
+  }
+
+  Future<List<RoomRead>> fetchReads(String roomId) async {
+    final response = await _dio.get<dynamic>(ApiEndpoints.roomReads(roomId));
+    return parseRoomReads(response.data);
   }
 
   /// đây là API để pin một tin nhắn trong phòng chat
