@@ -1,10 +1,8 @@
-import 'package:chat_app/app/router/routes.dart';
 import 'package:chat_app/core/widgets/error_view.dart';
 import 'package:chat_app/features/conversations/presentation/providers/conversations_provider.dart';
 import 'package:chat_app/features/conversations/presentation/widgets/conversation_list_tile.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 class ConversationsPage extends ConsumerStatefulWidget {
   const ConversationsPage({super.key});
@@ -79,7 +77,7 @@ class _ConversationsPageState extends ConsumerState<ConversationsPage> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Bắt đầu chat mới từ nút bút bên dưới',
+                              'Bắt đầu chat mới từ tab Danh bạ',
                               style: TextStyle(
                                 color: Theme.of(context).colorScheme.outline,
                               ),
@@ -130,11 +128,6 @@ class _ConversationsPageState extends ConsumerState<ConversationsPage> {
             ),
           );
         },
-      ),
-      floatingActionButton: FloatingActionButton(
-        heroTag: 'fab_conversations',
-        onPressed: () => context.push(AppRoutes.newChat),
-        child: const Icon(Icons.edit_outlined),
       ),
     );
   }

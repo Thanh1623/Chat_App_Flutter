@@ -4,10 +4,10 @@ import 'package:chat_app/app/router/routes.dart';
 import 'package:chat_app/features/auth/presentation/login_page.dart';
 import 'package:chat_app/features/auth/presentation/providers/auth_controller.dart';
 import 'package:chat_app/features/chat/presentation/chat_page.dart';
-import 'package:chat_app/features/contacts/presentation/joined_groups_page.dart';
+import 'package:chat_app/features/contacts/presentation/contacts_page.dart';
 import 'package:chat_app/features/conversations/domain/entities/conversation.dart';
 import 'package:chat_app/features/conversations/presentation/conversations_page.dart';
-import 'package:chat_app/features/conversations/presentation/new_chat_page.dart';
+import 'package:chat_app/features/conversations/presentation/create_group_page.dart';
 import 'package:chat_app/features/profile/presentation/edit_profile_page.dart';
 import 'package:chat_app/features/profile/presentation/profile_page.dart';
 import 'package:chat_app/features/profile/presentation/user_profile_page.dart';
@@ -64,7 +64,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: AppRoutes.contacts,
-                builder: (context, state) => const JoinedGroupsPage(),
+                builder: (context, state) => const ContactsPage(),
               ),
             ],
           ),
@@ -86,7 +86,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: AppRoutes.newChat,
-        builder: (context, state) => const NewChatPage(),
+        builder: (context, state) => const CreateGroupPage(),
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
