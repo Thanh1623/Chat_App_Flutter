@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'package:chat_app/features/chat/presentation/chat_image_picker_common.dart';
+import 'package:chat_app/features/chat/presentation/images/chat_image_picker_common.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 

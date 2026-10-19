@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:js_interop';
 import 'dart:typed_data';
 
-import 'package:chat_app/features/chat/presentation/chat_file_picker_common.dart';
+import 'package:chat_app/features/chat/presentation/files/chat_file_picker_common.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:web/web.dart' as web;
 

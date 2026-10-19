@@ -1,7 +1,7 @@
 import 'package:chat_app/core/widgets/error_view.dart';
 import 'package:chat_app/features/chat/data/providers/chat_repository_provider.dart';
 import 'package:chat_app/features/chat/domain/entities/room_media.dart';
-import 'package:chat_app/features/chat/presentation/chat_file_format.dart';
+import 'package:chat_app/features/chat/presentation/files/chat_file_format.dart';
 import 'package:chat_app/features/chat/presentation/widgets/pinned_messages_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

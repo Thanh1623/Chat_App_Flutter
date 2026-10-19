@@ -1,7 +1,7 @@
-import 'package:chat_app/features/chat/presentation/chat_file_picker.dart';
+import 'package:chat_app/features/chat/presentation/files/chat_file_picker.dart';
 import 'package:flutter/services.dart';
-import 'package:chat_app/features/chat/presentation/chat_file_preview_sheet.dart';
-import 'package:chat_app/features/chat/presentation/platform_file_bytes.dart';
+import 'package:chat_app/features/chat/presentation/files/chat_file_preview_sheet.dart';
+import 'package:chat_app/features/chat/presentation/files/platform_file_bytes.dart';
 import 'package:chat_app/features/chat/presentation/providers/chat_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';

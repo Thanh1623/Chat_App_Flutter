@@ -1,4 +1,4 @@
-import 'package:chat_app/features/chat/presentation/chat_file_picker_common.dart';
+import 'package:chat_app/features/chat/presentation/files/chat_file_picker_common.dart';
 import 'package:file_picker/file_picker.dart';
 
 Future<List<PlatformFile>> pickChatFiles() async {

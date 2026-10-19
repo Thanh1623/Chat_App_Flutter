@@ -1,5 +1,5 @@
-import 'package:chat_app/features/chat/presentation/chat_image_picker.dart';
-import 'package:chat_app/features/chat/presentation/chat_image_preview_sheet.dart';
+import 'package:chat_app/features/chat/presentation/images/chat_image_picker.dart';
+import 'package:chat_app/features/chat/presentation/images/chat_image_preview_sheet.dart';
 import 'package:chat_app/features/chat/presentation/providers/chat_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
