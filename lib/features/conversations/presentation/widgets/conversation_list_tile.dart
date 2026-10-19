@@ -6,6 +6,19 @@ import 'package:chat_app/features/conversations/domain/entities/conversation.dar
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+String _inboxTime(DateTime at) {
+  final local = at.toLocal();
+  final now = DateTime.now();
+  final hm =
+      '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
+  if (local.year == now.year &&
+      local.month == now.month &&
+      local.day == now.day) {
+    return hm;
+  }
+  return '${local.day.toString().padLeft(2, '0')}/${local.month.toString().padLeft(2, '0')}';
+}
+
 class ConversationListTile extends StatelessWidget {
   const ConversationListTile({super.key, required this.conversation});
 
@@ -35,20 +48,11 @@ class ConversationListTile extends StatelessWidget {
     }
 
     return ListTile(
-      leading: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          leadingAvatar,
-          if (hasUnread)
-            Positioned(
-              right: -4,
-              top: -4,
-              child: UnreadCountBadge(count: conversation.unreadCount),
-            ),
-        ],
-      ),
+      leading: leadingAvatar,
       title: Text(
         conversation.title,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: hasUnread ? const TextStyle(fontWeight: FontWeight.w700) : null,
       ),
       subtitle: Text(
@@ -63,6 +67,23 @@ class ConversationListTile extends StatelessWidget {
                   ? Theme.of(context).colorScheme.outline
                   : null,
             ),
+      ),
+      trailing: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Text(
+            _inboxTime(conversation.updatedAt),
+            style: TextStyle(
+              fontSize: 12,
+              color: Theme.of(context).colorScheme.outline,
+            ),
+          ),
+          if (hasUnread) ...[
+            const SizedBox(height: 4),
+            UnreadCountBadge(count: conversation.unreadCount),
+          ],
+        ],
       ),
       onTap: () => context.push(
         AppRoutes.chatPath(conversation.id),
