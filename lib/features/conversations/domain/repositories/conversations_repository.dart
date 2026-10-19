@@ -1,6 +1,7 @@
 import 'package:chat_app/features/contacts/domain/entities/contact_user.dart';
 import 'package:chat_app/features/conversations/domain/entities/conversation.dart';
 import 'package:chat_app/features/conversations/domain/entities/conversations_page.dart';
+import 'package:chat_app/features/conversations/domain/entities/inbox_search.dart';
 import 'package:chat_app/features/conversations/domain/entities/room_public.dart';
 
 abstract interface class ConversationsRepository {
@@ -37,4 +38,6 @@ abstract interface class ConversationsRepository {
     required String roomId,
     required String userId,
   });
+
+  Future<InboxSearchResult> searchInbox(String query);
 }

@@ -2,6 +2,7 @@ import 'package:chat_app/core/network/dio_client.dart';
 import 'package:chat_app/features/conversations/data/datasources/conversations_remote_data_source.dart';
 import 'package:chat_app/features/conversations/data/repositories/conversations_repository_impl.dart';
 import 'package:chat_app/features/conversations/domain/entities/conversation.dart';
+import 'package:chat_app/features/conversations/domain/entities/inbox_search.dart';
 import 'package:chat_app/features/conversations/domain/repositories/conversations_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -127,6 +128,11 @@ final conversationsProvider = Provider<AsyncValue<List<Conversation>>>((ref) {
         loading: () => const AsyncLoading(),
         error: (e, st) => AsyncError(e, st),
       );
+});
+
+final inboxSearchProvider =
+    FutureProvider.autoDispose.family<InboxSearchResult, String>((ref, query) {
+  return ref.watch(conversationsRepositoryProvider).searchInbox(query);
 });
 
 final totalUnreadCountProvider = Provider<int>((ref) {

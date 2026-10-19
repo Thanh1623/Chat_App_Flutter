@@ -5,6 +5,7 @@ import 'package:chat_app/features/contacts/data/models/contact_user_model.dart';
 import 'package:chat_app/features/contacts/domain/entities/contact_user.dart';
 import 'package:chat_app/features/conversations/domain/entities/conversation.dart';
 import 'package:chat_app/features/conversations/domain/entities/conversations_page.dart';
+import 'package:chat_app/features/conversations/domain/entities/inbox_search.dart';
 import 'package:chat_app/features/conversations/domain/entities/room_public.dart';
 import 'package:dio/dio.dart';
 
@@ -158,4 +159,39 @@ class ConversationsRemoteDataSource {
     );
     return RoomPublic.fromJson(response.data ?? {});
   }
+
+  Future<InboxSearchResult> searchInbox(String query) async {
+    final q = query.trim();
+    if (q.isEmpty) return const InboxSearchResult();
+    final response = await _dio.get<dynamic>(
+      ApiEndpoints.inboxSearch,
+      queryParameters: {'q': q},
+    );
+    return parseInboxSearch(response.data);
+  }
+}
+
+InboxSearchResult parseInboxSearch(dynamic data) {
+  if (data is! Map<String, dynamic>) {
+    return const InboxSearchResult();
+  }
+  final usersRaw = data['users'];
+  final roomsRaw = data['rooms'];
+  final messagesRaw = data['messages'];
+  return InboxSearchResult(
+    users: (usersRaw is List ? usersRaw : const [])
+        .whereType<Map<String, dynamic>>()
+        .map(ContactUserModel.fromJson)
+        .map((m) => m.toEntity())
+        .toList(),
+    rooms: (roomsRaw is List ? roomsRaw : const [])
+        .whereType<Map<String, dynamic>>()
+        .map(ConversationModel.fromJson)
+        .map((m) => m.toEntity())
+        .toList(),
+    messages: (messagesRaw is List ? messagesRaw : const [])
+        .whereType<Map<String, dynamic>>()
+        .map(InboxSearchMessage.fromJson)
+        .toList(),
+  );
 }

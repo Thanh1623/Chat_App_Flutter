@@ -3,6 +3,7 @@ import 'package:chat_app/features/conversations/data/datasources/conversations_r
 import 'package:chat_app/features/contacts/domain/entities/contact_user.dart';
 import 'package:chat_app/features/conversations/domain/entities/conversation.dart';
 import 'package:chat_app/features/conversations/domain/entities/conversations_page.dart';
+import 'package:chat_app/features/conversations/domain/entities/inbox_search.dart';
 import 'package:chat_app/features/conversations/domain/entities/room_public.dart';
 import 'package:chat_app/features/conversations/domain/repositories/conversations_repository.dart';
 
@@ -119,6 +120,15 @@ class ConversationsRepositoryImpl implements ConversationsRepository {
   }) async {
     try {
       return await _remote.removeRoomMember(roomId: roomId, userId: userId);
+    } catch (e) {
+      throw mapException(e);
+    }
+  }
+
+  @override
+  Future<InboxSearchResult> searchInbox(String query) async {
+    try {
+      return await _remote.searchInbox(query);
     } catch (e) {
       throw mapException(e);
     }
