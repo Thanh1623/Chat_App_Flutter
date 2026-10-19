@@ -1,9 +1,11 @@
 import 'package:chat_app/core/network/api_endpoints.dart';
+import 'package:chat_app/core/network/image_multipart.dart';
 import 'package:chat_app/features/conversations/data/models/conversation_model.dart';
 import 'package:chat_app/features/contacts/data/models/contact_user_model.dart';
 import 'package:chat_app/features/contacts/domain/entities/contact_user.dart';
 import 'package:chat_app/features/conversations/domain/entities/conversation.dart';
 import 'package:chat_app/features/conversations/domain/entities/conversations_page.dart';
+import 'package:chat_app/features/conversations/domain/entities/room_public.dart';
 import 'package:dio/dio.dart';
 
 class ConversationsRemoteDataSource {
@@ -124,5 +126,36 @@ class ConversationsRemoteDataSource {
 
   Future<void> deleteRoom(String roomId) async {
     await _dio.delete<void>(ApiEndpoints.deleteRoom(roomId));
+  }
+
+  Future<RoomPublic> updateRoomName(String roomId, String name) async {
+    final response = await _dio.patch<Map<String, dynamic>>(
+      ApiEndpoints.roomSettings(roomId),
+      data: {'name': name},
+    );
+    return RoomPublic.fromJson(response.data ?? {});
+  }
+
+  Future<RoomPublic> uploadRoomAvatar({
+    required String roomId,
+    required List<int> bytes,
+    required String filename,
+  }) async {
+    final formData = FormData.fromMap({
+      'file': MultipartFile.fromBytes(
+        bytes,
+        filename: filename,
+        contentType: imageMediaTypeFromFilename(filename),
+      ),
+    });
+    final response = await _dio.post<Map<String, dynamic>>(
+      ApiEndpoints.roomAvatar(roomId),
+      data: formData,
+      options: Options(
+        contentType: 'multipart/form-data',
+        headers: const {'Content-Type': null},
+      ),
+    );
+    return RoomPublic.fromJson(response.data ?? {});
   }
 }

@@ -31,6 +31,15 @@ final conversationsInboxSyncProvider = Provider<void>((ref) {
       ref.read(conversationsInboxProvider.notifier).refreshInbox();
     });
   });
+  final roomSub = socket.roomUpdates.listen((json) {
+    final id = json['id']?.toString() ?? '';
+    if (id.isEmpty) return;
+    ref.read(conversationsInboxProvider.notifier).applyRoomMeta(
+          id: id,
+          title: json['name']?.toString(),
+          avatarUrl: json['avatarUrl']?.toString(),
+        );
+  });
 
   void joinRooms(List<Conversation> conversations) {
     socket.ensureConnected(token: token);
@@ -46,5 +55,6 @@ final conversationsInboxSyncProvider = Provider<void>((ref) {
   ref.onDispose(() {
     debounce?.cancel();
     sub.cancel();
+    roomSub.cancel();
   });
 });

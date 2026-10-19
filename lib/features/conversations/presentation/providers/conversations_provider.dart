@@ -66,6 +66,32 @@ class ConversationsInboxNotifier extends AsyncNotifier<ConversationsInboxState> 
     state = await AsyncValue.guard(_fetchFirstPage);
   }
 
+  void applyRoomMeta({
+    required String id,
+    String? title,
+    String? avatarUrl,
+  }) {
+    final current = state.valueOrNull;
+    if (current == null) return;
+    final nextTitle = title?.trim();
+    state = AsyncData(
+      current.copyWith(
+        items: [
+          for (final c in current.items)
+            if (c.id != id)
+              c
+            else
+              c.copyWith(
+                title: nextTitle != null && nextTitle.isNotEmpty
+                    ? nextTitle
+                    : c.title,
+                avatarUrl: avatarUrl ?? c.avatarUrl,
+              ),
+        ],
+      ),
+    );
+  }
+
   Future<void> loadMore() async {
     final current = state.valueOrNull;
     if (current == null || !current.hasMore || current.loadingMore) return;

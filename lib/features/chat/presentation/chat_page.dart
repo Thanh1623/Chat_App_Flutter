@@ -11,6 +11,7 @@ import 'package:chat_app/features/chat/presentation/chat_image_send.dart';
 import 'package:chat_app/features/chat/presentation/providers/chat_controller.dart';
 import 'package:chat_app/features/chat/presentation/widgets/chat_message_avatar.dart';
 import 'package:chat_app/features/chat/presentation/widgets/group_members_sheet.dart';
+import 'package:chat_app/features/chat/presentation/widgets/group_settings_sheet.dart';
 import 'package:chat_app/features/chat/presentation/widgets/pinned_messages_sheet.dart';
 import 'package:chat_app/features/chat/presentation/widgets/room_media_sheet.dart';
 import 'package:chat_app/features/chat/presentation/widgets/reaction_users_sheet.dart';
@@ -172,6 +173,21 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     }
   }
 
+  Future<void> _openGroupSettings() async {
+    final inbox = ref
+        .read(conversationsInboxProvider)
+        .valueOrNull
+        ?.items
+        .where((c) => c.id == widget.conversationId);
+    final fromInbox = inbox == null || inbox.isEmpty ? null : inbox.first;
+    await showGroupSettingsSheet(
+      context: context,
+      roomId: widget.conversationId,
+      name: (fromInbox?.title ?? widget.title ?? '').trim(),
+      avatarUrl: fromInbox?.avatarUrl ?? '',
+    );
+  }
+
   Future<void> _openMembers() async {
     await showGroupMembersSheet(
       context: context,
@@ -287,7 +303,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         backgroundColor: primary,
         foregroundColor: Colors.white,
         title: InkWell(
-          onTap: widget.isGroup ? null : _openDirectPeerProfile,
+          onTap: widget.isGroup ? _openGroupSettings : _openDirectPeerProfile,
           child: Text(
             appBarTitle?.isNotEmpty == true ? appBarTitle! : 'Chat',
           ),
@@ -311,10 +327,15 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             PopupMenuButton<String>(
               icon: const Icon(Icons.more_vert),
               onSelected: (value) {
+                if (value == 'settings') _openGroupSettings();
                 if (value == 'members') _openMembers();
                 if (value == 'delete') _confirmDeleteGroup();
               },
               itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'settings',
+                  child: Text('Đổi tên / ảnh nhóm'),
+                ),
                 const PopupMenuItem(
                   value: 'members',
                   child: Text('Thành viên'),

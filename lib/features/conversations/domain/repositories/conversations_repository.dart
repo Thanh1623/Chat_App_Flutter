@@ -1,6 +1,7 @@
 import 'package:chat_app/features/contacts/domain/entities/contact_user.dart';
 import 'package:chat_app/features/conversations/domain/entities/conversation.dart';
 import 'package:chat_app/features/conversations/domain/entities/conversations_page.dart';
+import 'package:chat_app/features/conversations/domain/entities/room_public.dart';
 
 abstract interface class ConversationsRepository {
   Future<ConversationsPage> fetchConversationsPage({
@@ -16,6 +17,14 @@ abstract interface class ConversationsRepository {
   });
 
   Future<void> deleteRoom(String roomId);
+
+  Future<RoomPublic> updateRoomName(String roomId, String name);
+
+  Future<RoomPublic> uploadRoomAvatar({
+    required String roomId,
+    required List<int> bytes,
+    required String filename,
+  });
 
   Future<List<ContactUser>> fetchRoomMembers(String roomId);
 

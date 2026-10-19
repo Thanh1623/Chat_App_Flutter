@@ -3,6 +3,7 @@ import 'package:chat_app/features/conversations/data/datasources/conversations_r
 import 'package:chat_app/features/contacts/domain/entities/contact_user.dart';
 import 'package:chat_app/features/conversations/domain/entities/conversation.dart';
 import 'package:chat_app/features/conversations/domain/entities/conversations_page.dart';
+import 'package:chat_app/features/conversations/domain/entities/room_public.dart';
 import 'package:chat_app/features/conversations/domain/repositories/conversations_repository.dart';
 
 class ConversationsRepositoryImpl implements ConversationsRepository {
@@ -52,6 +53,39 @@ class ConversationsRepositoryImpl implements ConversationsRepository {
   Future<void> deleteRoom(String roomId) async {
     try {
       await _remote.deleteRoom(roomId);
+    } catch (e) {
+      throw mapException(e);
+    }
+  }
+
+  @override
+  Future<RoomPublic> updateRoomName(String roomId, String name) async {
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) {
+      throw ArgumentError('Tên nhóm không được trống');
+    }
+    try {
+      return await _remote.updateRoomName(roomId, trimmed);
+    } catch (e) {
+      throw mapException(e);
+    }
+  }
+
+  @override
+  Future<RoomPublic> uploadRoomAvatar({
+    required String roomId,
+    required List<int> bytes,
+    required String filename,
+  }) async {
+    if (bytes.isEmpty) {
+      throw ArgumentError('Ảnh trống');
+    }
+    try {
+      return await _remote.uploadRoomAvatar(
+        roomId: roomId,
+        bytes: bytes,
+        filename: filename,
+      );
     } catch (e) {
       throw mapException(e);
     }

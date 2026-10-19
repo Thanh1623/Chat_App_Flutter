@@ -23,4 +23,26 @@ class Conversation {
   /// Người còn lại trong chat 1-1 (do BE tính theo viewer).
   final String? peerUserId;
   final String avatarUrl;
+
+  Conversation copyWith({
+    String? title,
+    String? lastMessagePreview,
+    DateTime? updatedAt,
+    int? unreadCount,
+    bool? canDelete,
+    String? peerUserId,
+    String? avatarUrl,
+  }) {
+    return Conversation(
+      id: id,
+      title: title ?? this.title,
+      type: type,
+      lastMessagePreview: lastMessagePreview ?? this.lastMessagePreview,
+      updatedAt: updatedAt ?? this.updatedAt,
+      unreadCount: unreadCount ?? this.unreadCount,
+      canDelete: canDelete ?? this.canDelete,
+      peerUserId: peerUserId ?? this.peerUserId,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+    );
+  }
 }
