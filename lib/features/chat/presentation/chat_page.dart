@@ -14,6 +14,7 @@ import 'package:chat_app/features/chat/presentation/widgets/group_members_sheet.
 import 'package:chat_app/features/chat/presentation/widgets/group_settings_sheet.dart';
 import 'package:chat_app/features/chat/presentation/widgets/pinned_messages_sheet.dart';
 import 'package:chat_app/features/chat/presentation/widgets/room_media_sheet.dart';
+import 'package:chat_app/features/chat/presentation/widgets/message_seen_sheet.dart';
 import 'package:chat_app/features/chat/presentation/widgets/reaction_users_sheet.dart';
 import 'package:chat_app/features/chat/presentation/widgets/create_task_sheet.dart';
 import 'package:chat_app/features/chat/presentation/widgets/work_task_card.dart';
@@ -254,6 +255,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           ? () => _confirmRecall(chat, message)
           : null,
       onHide: () => _confirmHide(chat, message),
+      onSeenDetails: widget.isGroup && mine
+          ? () => _showSeenDetails(message)
+          : null,
     );
   }
 
@@ -284,6 +288,15 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       context: context,
       message: message,
       initialEmoji: emoji,
+      onOpenUser: _openUserProfile,
+    );
+  }
+
+  void _showSeenDetails(ChatMessage message) {
+    showMessageSeenSheet(
+      context: context,
+      roomId: widget.conversationId,
+      message: message,
       onOpenUser: _openUserProfile,
     );
   }
@@ -406,6 +419,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                   onOpenSenderProfile: _openUserProfile,
                   onPinToggle: _togglePin,
                   onShowReactors: _showReactors,
+                  onShowSeenDetails: _showSeenDetails,
                   onRetry: () =>
                       ref.read(chatControllerProvider(roomId).notifier).load(),
                   onLoadMore: () => ref
@@ -469,6 +483,7 @@ class _MessageList extends StatefulWidget {
     required this.onOpenSenderProfile,
     required this.onPinToggle,
     required this.onShowReactors,
+    required this.onShowSeenDetails,
     required this.onRetry,
     required this.onLoadMore,
     required this.onToggleTask,
@@ -483,6 +498,7 @@ class _MessageList extends StatefulWidget {
   final void Function(String userId) onOpenSenderProfile;
   final void Function(ChatMessage message) onPinToggle;
   final void Function(ChatMessage message, String emoji) onShowReactors;
+  final void Function(ChatMessage message) onShowSeenDetails;
   final VoidCallback onRetry;
   final VoidCallback onLoadMore;
   final void Function(ChatMessage message) onToggleTask;
@@ -611,6 +627,7 @@ class _MessageListState extends State<_MessageList> {
               onOpenSenderProfile: widget.onOpenSenderProfile,
               onPinToggle: widget.onPinToggle,
               onShowReactors: widget.onShowReactors,
+              onShowSeenDetails: widget.onShowSeenDetails,
               onOpenReply: widget.chat.flashMessage,
               onToggleTask: widget.onToggleTask,
               readers: chat.readersOf(message.id),
@@ -681,6 +698,7 @@ class _MessageBubble extends StatelessWidget {
     required this.onOpenSenderProfile,
     required this.onPinToggle,
     required this.onShowReactors,
+    required this.onShowSeenDetails,
     required this.onOpenReply,
     required this.onToggleTask,
     required this.readers,
@@ -696,6 +714,7 @@ class _MessageBubble extends StatelessWidget {
   final void Function(String userId) onOpenSenderProfile;
   final void Function(ChatMessage message) onPinToggle;
   final void Function(ChatMessage message, String emoji) onShowReactors;
+  final void Function(ChatMessage message) onShowSeenDetails;
   final void Function(String messageId) onOpenReply;
   final void Function(ChatMessage message) onToggleTask;
   final List<RoomRead> readers;
@@ -849,6 +868,9 @@ class _MessageBubble extends StatelessWidget {
                       child: _ReadReceipt(
                         readers: readers,
                         isGroup: isGroup,
+                        onShowDetails: isGroup
+                            ? () => onShowSeenDetails(message)
+                            : null,
                       ),
                     ),
                 ],
@@ -865,10 +887,12 @@ class _ReadReceipt extends StatelessWidget {
   const _ReadReceipt({
     required this.readers,
     required this.isGroup,
+    this.onShowDetails,
   });
 
   final List<RoomRead> readers;
   final bool isGroup;
+  final VoidCallback? onShowDetails;
 
   @override
   Widget build(BuildContext context) {
@@ -883,27 +907,41 @@ class _ReadReceipt extends StatelessWidget {
     final extra = readers.length - shown.length;
     return Tooltip(
       message: readers.map((r) => r.name).join(', '),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (var i = 0; i < shown.length; i++)
-            Padding(
-              padding: EdgeInsets.only(left: i == 0 ? 0 : 2),
-              child: ChatMessageAvatar(
-                displayName: shown[i].name,
-                avatarUrl: shown[i].avatarUrl,
-                radius: 8,
+      child: InkWell(
+        onTap: onShowDetails,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (var i = 0; i < shown.length; i++)
+                Padding(
+                  padding: EdgeInsets.only(left: i == 0 ? 0 : 2),
+                  child: ChatMessageAvatar(
+                    displayName: shown[i].name,
+                    avatarUrl: shown[i].avatarUrl,
+                    radius: 8,
+                  ),
+                ),
+              if (extra > 0)
+                Padding(
+                  padding: const EdgeInsets.only(left: 4),
+                  child: Text(
+                    '+$extra',
+                    style: const TextStyle(fontSize: 10, color: Colors.black45),
+                  ),
+                ),
+              const Padding(
+                padding: EdgeInsets.only(left: 6),
+                child: Text(
+                  'Chi tiết',
+                  style: TextStyle(fontSize: 10, color: Colors.black45),
+                ),
               ),
-            ),
-          if (extra > 0)
-            Padding(
-              padding: const EdgeInsets.only(left: 4),
-              child: Text(
-                '+$extra',
-                style: const TextStyle(fontSize: 10, color: Colors.black45),
-              ),
-            ),
-        ],
+            ],
+          ),
+        ),
       ),
     );
   }

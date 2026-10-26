@@ -38,6 +38,7 @@ Future<void> showPinMessageActions({
   required VoidCallback onReply,
   VoidCallback? onRecall,
   VoidCallback? onHide,
+  VoidCallback? onSeenDetails,
 }) async {
   HapticFeedback.mediumImpact();
   final pinned = message.pinned;
@@ -114,6 +115,20 @@ Future<void> showPinMessageActions({
                         label: Text(pinned ? 'Bỏ ghim' : 'Ghim tin nhắn'),
                       ),
                     ),
+                    if (onSeenDetails != null) ...[
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            onSeenDetails();
+                          },
+                          icon: const Icon(Icons.visibility_outlined),
+                          label: const Text('Chi tiết đã xem'),
+                        ),
+                      ),
+                    ],
                   ],
                   if (onRecall != null) ...[
                     const SizedBox(height: 8),

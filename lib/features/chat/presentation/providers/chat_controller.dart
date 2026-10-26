@@ -48,6 +48,7 @@ class ChatController extends ChangeNotifier {
 
   List<ChatMessage> get messages => _messages;
   List<ChatMessage> get pinned => _pinned;
+  List<RoomRead> get reads => _reads;
   ChatMessage? get replyingTo => _replyingTo;
   String? get flashMessageId => _flashMessageId;
   bool get isLoading => _loading;
