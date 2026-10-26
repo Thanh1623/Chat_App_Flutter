@@ -1,6 +1,7 @@
 import 'package:chat_app/core/widgets/unread_count_badge.dart';
 import 'package:chat_app/features/conversations/presentation/providers/conversations_inbox_sync.dart';
 import 'package:chat_app/features/conversations/presentation/providers/conversations_provider.dart';
+import 'package:chat_app/features/work/presentation/providers/work_tasks_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -11,8 +12,11 @@ class MainShell extends ConsumerWidget {
   final StatefulNavigationShell navigationShell;
 
   void _onTap(WidgetRef ref, int index) {
-    if (index == 0 || index == 1) {
+    if (index == 0) {
       ref.read(conversationsInboxProvider.notifier).refreshInbox();
+    }
+    if (index == 1) {
+      ref.read(myTasksProvider.notifier).refresh();
     }
     navigationShell.goBranch(
       index,
@@ -23,7 +27,9 @@ class MainShell extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(conversationsInboxSyncProvider);
+    ref.watch(workRealtimeSyncProvider);
     final unreadTotal = ref.watch(totalUnreadCountProvider);
+    final workBadge = ref.watch(workBadgeCountProvider);
     final primary = Theme.of(context).colorScheme.primary;
 
     return Scaffold(
@@ -46,6 +52,20 @@ class MainShell extends ConsumerWidget {
               selectedColor: primary,
             ),
             label: 'Tin nhắn',
+          ),
+          NavigationDestination(
+            icon: _NavIcon(
+              icon: Icons.task_alt_outlined,
+              unread: workBadge,
+              selectedColor: primary,
+            ),
+            selectedIcon: _NavIcon(
+              icon: Icons.task_alt,
+              unread: workBadge,
+              selected: true,
+              selectedColor: primary,
+            ),
+            label: 'Việc',
           ),
           NavigationDestination(
             icon: const Icon(Icons.contacts_outlined),

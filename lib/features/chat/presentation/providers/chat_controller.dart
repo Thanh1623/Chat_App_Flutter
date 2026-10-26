@@ -8,6 +8,7 @@ import 'package:chat_app/features/chat/domain/entities/chat_message.dart';
 import 'package:chat_app/features/chat/domain/entities/room_read.dart';
 import 'package:chat_app/features/chat/domain/repositories/chat_repository.dart';
 import 'package:chat_app/features/conversations/presentation/providers/conversations_provider.dart';
+import 'package:chat_app/features/work/data/providers/work_repository_provider.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -147,6 +148,57 @@ class ChatController extends ChangeNotifier {
               (myId == null || item.userId != myId),
         )
         .toList();
+  }
+
+  void upsertIncoming(ChatMessage incoming) {
+    _upsert(incoming, insertIfMissing: true);
+  }
+
+  Future<void> createTask({
+    required String title,
+    required String assigneeId,
+    String? notes,
+    DateTime? dueAt,
+  }) async {
+    _sending = true;
+    _error = null;
+    notifyListeners();
+    try {
+      final sent = await _ref.read(workRepositoryProvider).createTask(
+            roomId: roomId,
+            title: title,
+            assigneeId: assigneeId,
+            notes: notes,
+            dueAt: dueAt,
+          );
+      _upsert(sent, insertIfMissing: true);
+      await _markLatestRead();
+    } on Failure catch (e) {
+      _error = e.message;
+    } catch (e) {
+      _error = e.toString();
+    } finally {
+      _sending = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> toggleTaskStatus(ChatMessage message) async {
+    final task = message.task;
+    if (task == null) return;
+    try {
+      final updated = await _ref.read(workRepositoryProvider).updateTask(
+            taskId: task.id,
+            status: task.isDone ? 'open' : 'done',
+          );
+      _upsert(updated, insertIfMissing: false);
+    } on Failure catch (e) {
+      _error = e.message;
+      notifyListeners();
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+    }
   }
 
   void _onSocketMessage(ChatMessage incoming) {

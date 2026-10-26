@@ -52,6 +52,8 @@ class ChatMessage {
     this.recalled = false,
     this.reactions = const [],
     this.replyTo,
+    this.type = 'text',
+    this.task,
   });
 
   final String id;
@@ -73,6 +75,8 @@ class ChatMessage {
   final bool recalled;
   final List<MessageReaction> reactions;
   final MessageReplyTo? replyTo;
+  final String type;
+  final MessageTask? task;
 
   bool get isAgent => role == 'agent';
   bool get hasImage {
@@ -84,6 +88,8 @@ class ChatMessage {
     final url = fileUrl?.trim() ?? '';
     return url.isNotEmpty;
   }
+
+  bool get isTask => type == 'task' && task != null;
 }
 
 class MessageReplyTo {
@@ -108,4 +114,30 @@ class MessageReplyTo {
     if ((imageUrl ?? '').trim().isNotEmpty) return 'Ảnh';
     return 'Tin nhắn';
   }
+}
+
+class MessageTask {
+  const MessageTask({
+    required this.id,
+    required this.title,
+    required this.status,
+    required this.creatorId,
+    required this.assigneeId,
+    this.notes = '',
+    this.dueAt,
+    this.creatorName = '',
+    this.assigneeName = '',
+  });
+
+  final String id;
+  final String title;
+  final String notes;
+  final String status;
+  final DateTime? dueAt;
+  final String creatorId;
+  final String assigneeId;
+  final String creatorName;
+  final String assigneeName;
+
+  bool get isDone => status == 'done';
 }

@@ -11,6 +11,7 @@ import 'package:chat_app/features/conversations/presentation/create_group_page.d
 import 'package:chat_app/features/profile/presentation/edit_profile_page.dart';
 import 'package:chat_app/features/profile/presentation/profile_page.dart';
 import 'package:chat_app/features/profile/presentation/user_profile_page.dart';
+import 'package:chat_app/features/work/presentation/work_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -57,6 +58,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: AppRoutes.home,
                 builder: (context, state) => const ConversationsPage(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.work,
+                builder: (context, state) => const WorkPage(),
               ),
             ],
           ),

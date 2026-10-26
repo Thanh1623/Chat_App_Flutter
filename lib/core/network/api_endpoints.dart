@@ -39,4 +39,8 @@ abstract final class ApiEndpoints {
       '/rooms/$roomId/messages/$messageId/recall';
   static String hideMessage(String roomId, String messageId) =>
       '/rooms/$roomId/messages/$messageId';
+
+  static String roomTasks(String roomId) => '/rooms/$roomId/tasks';
+  static const myTasks = '/tasks/mine';
+  static String task(String id) => '/tasks/$id';
 }

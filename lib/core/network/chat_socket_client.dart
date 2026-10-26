@@ -17,10 +17,12 @@ class ChatSocketClient {
   final _messages = StreamController<Map<String, dynamic>>.broadcast();
   final _reads = StreamController<Map<String, dynamic>>.broadcast();
   final _roomUpdates = StreamController<Map<String, dynamic>>.broadcast();
+  final _tasks = StreamController<Map<String, dynamic>>.broadcast();
 
   Stream<Map<String, dynamic>> get messages => _messages.stream;
   Stream<Map<String, dynamic>> get reads => _reads.stream;
   Stream<Map<String, dynamic>> get roomUpdates => _roomUpdates.stream;
+  Stream<Map<String, dynamic>> get tasks => _tasks.stream;
 
   String? _token;
 
@@ -104,6 +106,11 @@ class ChatSocketClient {
         final json = _asJsonMap(data);
         if (json == null) return;
         _roomUpdates.add(json);
+      })
+      ..on('task', (data) {
+        final json = _asJsonMap(data);
+        if (json == null) return;
+        _tasks.add(json);
       })
       ..connect();
   }

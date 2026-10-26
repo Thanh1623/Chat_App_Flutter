@@ -1,6 +1,7 @@
 abstract final class AppRoutes {
   static const login = '/login';
   static const home = '/';
+  static const work = '/work';
   static const contacts = '/contacts';
   static const profile = '/me';
   static const editProfile = '/me/edit';

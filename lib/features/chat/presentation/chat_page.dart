@@ -15,6 +15,8 @@ import 'package:chat_app/features/chat/presentation/widgets/group_settings_sheet
 import 'package:chat_app/features/chat/presentation/widgets/pinned_messages_sheet.dart';
 import 'package:chat_app/features/chat/presentation/widgets/room_media_sheet.dart';
 import 'package:chat_app/features/chat/presentation/widgets/reaction_users_sheet.dart';
+import 'package:chat_app/features/chat/presentation/widgets/create_task_sheet.dart';
+import 'package:chat_app/features/chat/presentation/widgets/work_task_card.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:chat_app/features/conversations/presentation/providers/conversations_provider.dart';
 import 'package:flutter/material.dart';
@@ -49,7 +51,15 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _loadMemberAvatars());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadMemberAvatars();
+      final messageId = GoRouterState.of(context).uri.queryParameters['m'];
+      if (messageId != null && messageId.isNotEmpty) {
+        ref
+            .read(chatControllerProvider(widget.conversationId).notifier)
+            .flashMessage(messageId);
+      }
+    });
   }
 
   Future<void> _loadMemberAvatars() async {
@@ -95,6 +105,34 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       widget.conversationId,
       caption: caption.isEmpty ? null : caption,
     );
+  }
+
+  Future<void> _createTask() async {
+    try {
+      final members = await ref
+          .read(conversationsRepositoryProvider)
+          .fetchRoomMembers(widget.conversationId);
+      if (!mounted) return;
+      final draft = await showCreateTaskSheet(
+        context: context,
+        members: members,
+        suggestedAssigneeId: widget.isGroup ? null : _directPeerUserId(),
+      );
+      if (draft == null || !mounted) return;
+      await ref
+          .read(chatControllerProvider(widget.conversationId).notifier)
+          .createTask(
+            title: draft.title,
+            assigneeId: draft.assigneeId,
+            notes: draft.notes,
+            dueAt: draft.dueAt,
+          );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
+    }
   }
 
   Future<void> _pickFile() async {
@@ -373,6 +411,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                   onLoadMore: () => ref
                       .read(chatControllerProvider(roomId).notifier)
                       .loadMore(),
+                  onToggleTask: (message) => ref
+                      .read(chatControllerProvider(roomId).notifier)
+                      .toggleTaskStatus(message),
                 );
               },
             ),
@@ -404,6 +445,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                     onSend: _send,
                     onPickImage: _pickImage,
                     onPickFile: _pickFile,
+                    onCreateTask: _createTask,
                   ),
                 ],
               );
@@ -429,6 +471,7 @@ class _MessageList extends StatefulWidget {
     required this.onShowReactors,
     required this.onRetry,
     required this.onLoadMore,
+    required this.onToggleTask,
   });
 
   final ChatController chat;
@@ -442,6 +485,7 @@ class _MessageList extends StatefulWidget {
   final void Function(ChatMessage message, String emoji) onShowReactors;
   final VoidCallback onRetry;
   final VoidCallback onLoadMore;
+  final void Function(ChatMessage message) onToggleTask;
 
   @override
   State<_MessageList> createState() => _MessageListState();
@@ -568,6 +612,7 @@ class _MessageListState extends State<_MessageList> {
               onPinToggle: widget.onPinToggle,
               onShowReactors: widget.onShowReactors,
               onOpenReply: widget.chat.flashMessage,
+              onToggleTask: widget.onToggleTask,
               readers: chat.readersOf(message.id),
               isGroup: widget.isGroup,
             );
@@ -637,6 +682,7 @@ class _MessageBubble extends StatelessWidget {
     required this.onPinToggle,
     required this.onShowReactors,
     required this.onOpenReply,
+    required this.onToggleTask,
     required this.readers,
     required this.isGroup,
   });
@@ -651,6 +697,7 @@ class _MessageBubble extends StatelessWidget {
   final void Function(ChatMessage message) onPinToggle;
   final void Function(ChatMessage message, String emoji) onShowReactors;
   final void Function(String messageId) onOpenReply;
+  final void Function(ChatMessage message) onToggleTask;
   final List<RoomRead> readers;
   final bool isGroup;
 
@@ -728,7 +775,9 @@ class _MessageBubble extends StatelessWidget {
                         child: _BubbleBody(
                           message: message,
                           isMine: isMine,
+                          myId: myId,
                           onOpenReply: onOpenReply,
+                          onToggleTask: onToggleTask,
                         ),
                       ),
                       if (message.pinned && !message.recalled)
@@ -864,15 +913,27 @@ class _BubbleBody extends StatelessWidget {
   const _BubbleBody({
     required this.message,
     required this.isMine,
+    required this.myId,
     required this.onOpenReply,
+    required this.onToggleTask,
   });
 
   final ChatMessage message;
   final bool isMine;
+  final String? myId;
   final void Function(String messageId) onOpenReply;
+  final void Function(ChatMessage message) onToggleTask;
 
   @override
   Widget build(BuildContext context) {
+    if (message.isTask) {
+      return WorkTaskCard(
+        message: message,
+        myId: myId,
+        onToggle: () => onToggleTask(message),
+      );
+    }
+
     if (message.recalled) {
       return DecoratedBox(
         decoration: BoxDecoration(
@@ -1187,6 +1248,7 @@ class _MessageComposer extends StatefulWidget {
     required this.onSend,
     required this.onPickImage,
     required this.onPickFile,
+    this.onCreateTask,
     this.replyingTo,
     this.onClearReply,
   });
@@ -1197,6 +1259,7 @@ class _MessageComposer extends StatefulWidget {
   final VoidCallback onSend;
   final VoidCallback onPickImage;
   final VoidCallback onPickFile;
+  final VoidCallback? onCreateTask;
   final ChatMessage? replyingTo;
   final VoidCallback? onClearReply;
 
@@ -1282,6 +1345,12 @@ class _MessageComposerState extends State<_MessageComposer> {
                                 widget.sending ? null : widget.onPickFile,
                             icon: Icon(Icons.attach_file, color: primary),
                             tooltip: 'Gửi tệp',
+                          ),
+                          IconButton(
+                            onPressed:
+                                widget.sending ? null : widget.onCreateTask,
+                            icon: Icon(Icons.checklist_outlined, color: primary),
+                            tooltip: 'Giao việc',
                           ),
                         ],
                       )
