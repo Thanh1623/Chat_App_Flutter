@@ -5,6 +5,8 @@ abstract final class ApiEndpoints {
   static const authMe = '/auth/me';
   static const authMeAvatar = '/auth/me/avatar';
 
+  static const authRefresh = '/auth/refresh';
+
   static const conversations = '/rooms';
   static const inboxSearch = '/rooms/search';
   static String conversationMessages(String id) => '/rooms/$id/messages';

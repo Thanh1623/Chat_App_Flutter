@@ -17,6 +17,7 @@ class _StubAuthRemote extends AuthRemoteDataSource {
   }) async {
     return LoginResponse(
       accessToken: 'jwt',
+      refreshToken: 'refresh-token-value',
       user: User(id: '1', displayName: 'Test', email: email),
     );
   }
@@ -72,17 +73,20 @@ class _InMemorySecureStorage extends FlutterSecureStorage {
 }
 
 void main() {
-  test('LoginResponse parses Nest-style JSON', () {
+  test('LoginResponse parses Nest token + refreshToken', () {
     final parsed = LoginResponse.fromJson({
-      'accessToken': 'abc',
+      'token': 'abc',
+      'refreshToken': 'ref',
       'user': {
         'id': '1',
-        'displayName': 'An',
+        'name': 'An',
         'email': 'a@b.c',
       },
     });
     expect(parsed.accessToken, 'abc');
+    expect(parsed.refreshToken, 'ref');
     expect(parsed.user.email, 'a@b.c');
+    expect(parsed.user.displayName, 'An');
   });
 
   test('signIn rejects empty credentials', () async {
@@ -94,5 +98,14 @@ void main() {
       () => repo.signIn(email: '', password: 'x'),
       throwsArgumentError,
     );
+  });
+
+  test('signIn persists access and refresh tokens', () async {
+    final session = SessionStorage(_InMemorySecureStorage());
+    final repo = AuthRepositoryImpl(_StubAuthRemote(), session);
+    final user = await repo.signIn(email: 'a@b.c', password: 'secret');
+    expect(user.id, '1');
+    expect(session.accessToken, 'jwt');
+    expect(session.refreshToken, 'refresh-token-value');
   });
 }

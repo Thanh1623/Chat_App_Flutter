@@ -20,11 +20,14 @@ class AuthRemoteDataSource {
     return LoginResponse.fromJson(response.data ?? {});
   }
 
-  Future<void> logout() async {
+  Future<void> logout(String refreshToken) async {
     try {
-      await _dio.post<void>(ApiEndpoints.authLogout);
+      await _dio.post<void>(
+        ApiEndpoints.authLogout,
+        data: {'refreshToken': refreshToken},
+      );
     } on DioException {
-      // ponytail: BE có thể không có logout — vẫn xóa token local
+      // ponytail: logout local vẫn chạy nếu BE fail
     }
   }
 
@@ -33,7 +36,7 @@ class AuthRemoteDataSource {
     return User.fromJson(response.data ?? {});
   }
 
-  Future<LoginResponse> updateProfile({
+  Future<({User user, LoginResponse? tokens})> updateProfile({
     String? name,
     String? email,
     String? password,
@@ -56,10 +59,10 @@ class AuthRemoteDataSource {
       ApiEndpoints.authMe,
       data: data,
     );
-    return LoginResponse.fromJson(response.data ?? {});
+    return _sessionBody(response.data ?? {});
   }
 
-  Future<LoginResponse> uploadAvatar({
+  Future<User> uploadAvatar({
     required List<int> bytes,
     required String filename,
   }) async {
@@ -78,6 +81,23 @@ class AuthRemoteDataSource {
         headers: const {'Content-Type': null},
       ),
     );
-    return LoginResponse.fromJson(response.data ?? {});
+    return _userFromSessionBody(response.data ?? {});
+  }
+
+  ({User user, LoginResponse? tokens}) _sessionBody(Map<String, dynamic> json) {
+    final user = _userFromSessionBody(json);
+    final refresh = json['refreshToken']?.toString() ?? '';
+    return (
+      user: user,
+      tokens: refresh.isNotEmpty ? LoginResponse.fromJson(json) : null,
+    );
+  }
+
+  User _userFromSessionBody(Map<String, dynamic> json) {
+    final userJson = json['user'];
+    if (userJson is Map<String, dynamic>) {
+      return User.fromJson(userJson);
+    }
+    return User.fromJson(json);
   }
 }
