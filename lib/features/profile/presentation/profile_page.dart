@@ -51,7 +51,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               onAvatarTap: auth.isLoading
                   ? null
                   : () => pickAndUploadProfileAvatar(context, ref),
-              onOpenProfile: () => context.push(AppRoutes.editProfile),
+              onOpenProfile: () => context.push(AppRoutes.employeeProfile),
             ),
             const SizedBox(height: 12),
             if (user != null) _InfoCard(user: user),
@@ -61,10 +61,19 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             _MenuGroup(
               children: [
                 _MenuTile(
+                  icon: Icons.badge_outlined,
+                  iconColor: primary,
+                  iconBg: primary.withValues(alpha: 0.12),
+                  title: 'Hồ sơ nhân sự',
+                  subtitle: 'Công việc, cá nhân, giấy tờ, gia đình…',
+                  onTap: () => context.push(AppRoutes.employeeProfile),
+                ),
+                const Divider(height: 1, indent: 72),
+                _MenuTile(
                   icon: Icons.edit_outlined,
                   iconColor: primary,
                   iconBg: primary.withValues(alpha: 0.12),
-                  title: 'Chỉnh sửa hồ sơ',
+                  title: 'Chỉnh sửa tài khoản',
                   subtitle: 'Tên, email, ảnh đại diện, mật khẩu',
                   onTap: () => context.push(AppRoutes.editProfile),
                 ),
@@ -293,7 +302,7 @@ class _ProfileHeader extends StatelessWidget {
                               ),
                               const SizedBox(height: 4),
                               const Text(
-                                'Xem hồ sơ',
+                                'Hồ sơ nhân sự',
                                 style: TextStyle(
                                   color: Colors.white70,
                                   fontSize: 13,
