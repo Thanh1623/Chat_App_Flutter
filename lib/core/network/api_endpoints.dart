@@ -7,6 +7,10 @@ abstract final class ApiEndpoints {
 
   static const authRefresh = '/auth/refresh';
 
+  static const employeeMe = '/employees/me';
+  static String employeeMeCitizenId(String side) =>
+      '/employees/me/citizen-id/$side';
+
   static const conversations = '/rooms';
   static const inboxSearch = '/rooms/search';
   static String conversationMessages(String id) => '/rooms/$id/messages';

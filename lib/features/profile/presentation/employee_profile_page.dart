@@ -1,10 +1,13 @@
+import 'package:chat_app/core/widgets/error_view.dart';
 import 'package:chat_app/features/auth/presentation/providers/auth_controller.dart';
 import 'package:chat_app/features/profile/domain/entities/employee_profile.dart';
 import 'package:chat_app/features/profile/presentation/providers/employee_profile_provider.dart';
 import 'package:chat_app/features/profile/presentation/widgets/employee_profile_ui.dart';
 import 'package:chat_app/features/profile/presentation/widgets/profile_avatar.dart';
+import 'package:chat_app/app/router/routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 class EmployeeProfilePage extends ConsumerStatefulWidget {
   const EmployeeProfilePage({super.key});
@@ -39,21 +42,28 @@ class _EmployeeProfilePageState extends ConsumerState<EmployeeProfilePage>
     super.dispose();
   }
 
-  void _onEditTap() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        content: const Text(
-          'Chỉnh sửa hồ sơ sẽ kết nối API — đang làm giao diện trước.',
-        ),
-      ),
-    );
-  }
+  void _onEditTap() => context.push(AppRoutes.employeeProfileEdit);
 
   @override
   Widget build(BuildContext context) {
-    final profile = ref.watch(employeeProfilePreviewProvider);
+    final async = ref.watch(employeeProfileProvider);
+    return async.when(
+      loading: () => Scaffold(
+        appBar: AppBar(title: const Text('Hồ sơ nhân sự')),
+        body: const Center(child: CircularProgressIndicator()),
+      ),
+      error: (e, _) => Scaffold(
+        appBar: AppBar(title: const Text('Hồ sơ nhân sự')),
+        body: ErrorView(
+          message: e.toString(),
+          onRetry: () => ref.invalidate(employeeProfileProvider),
+        ),
+      ),
+      data: _buildContent,
+    );
+  }
+
+  Widget _buildContent(EmployeeProfile profile) {
     final user = ref.watch(authControllerProvider).user;
     final primary = Theme.of(context).colorScheme.primary;
 
@@ -143,19 +153,22 @@ class _EmployeeProfilePageState extends ConsumerState<EmployeeProfilePage>
   }
 }
 
-class _ProfileTabBody extends StatelessWidget {
+class _ProfileTabBody extends ConsumerWidget {
   const _ProfileTabBody({required this.children});
 
   final List<Widget> children;
 
   @override
-  Widget build(BuildContext context) {
-    return ListView(
+  Widget build(BuildContext context, WidgetRef ref) {
+    return RefreshIndicator(
+      onRefresh: () => ref.refresh(employeeProfileProvider.future),
+      child: ListView(
       physics: const AlwaysScrollableScrollPhysics(
         parent: ClampingScrollPhysics(),
       ),
       padding: const EdgeInsets.only(top: 12, bottom: 28),
       children: children,
+      ),
     );
   }
 }
@@ -380,11 +393,6 @@ class _WorkSection extends StatelessWidget {
               highlight: true,
             ),
             ProfileField(
-              label: 'Mã định danh NV',
-              value: profile.employeeSeq ?? '',
-              icon: Icons.numbers_outlined,
-            ),
-            ProfileField(
               label: 'Loại hợp đồng',
               value: profile.contractType ?? '',
             ),
@@ -403,7 +411,7 @@ class _WorkSection extends StatelessWidget {
               value: profile.departmentGroup ?? '',
             ),
             ProfileField(
-              label: 'Mã khối theo quản lý',
+              label: 'Trưởng nhóm',
               value: profile.managementBlockCode ?? '',
             ),
             ProfileField(
@@ -572,7 +580,7 @@ class _FamilySection extends StatelessWidget {
     return ProfileSectionCard(
       icon: Icons.family_restroom_outlined,
       title: 'Gia đình & liên hệ',
-      subtitle: 'Con cái, khẩn cấp và người giám hộ',
+      subtitle: 'Liên hệ khẩn cấp và người giám hộ',
       children: [
         ProfileSubBlock(
           title: 'Liên hệ khẩn cấp',
@@ -589,31 +597,6 @@ class _FamilySection extends StatelessWidget {
           ),
         ),
         ProfileSubBlock(
-          title: 'Thông tin con cái',
-          child: profile.children.isEmpty
-              ? ProfileFieldTile(
-                  field: const ProfileField(
-                    label: 'Danh sách',
-                    value: 'Chưa khai báo',
-                  ),
-                )
-              : Column(
-                  children: [
-                    for (var i = 0; i < profile.children.length; i++) ...[
-                      ProfileFieldTile(
-                        field: ProfileField(
-                          label: 'Con ${i + 1}',
-                          value: _childLabel(profile.children[i]),
-                          icon: Icons.child_care_outlined,
-                        ),
-                      ),
-                      if (i < profile.children.length - 1)
-                        const SizedBox(height: 8),
-                    ],
-                  ],
-                ),
-        ),
-        ProfileSubBlock(
           title: 'Người giám hộ',
           child: ProfileFieldGrid(
             fields: [
@@ -624,14 +607,6 @@ class _FamilySection extends StatelessWidget {
         ),
       ],
     );
-  }
-
-  String _childLabel(EmployeeChild c) {
-    final dob = c.dateOfBirth;
-    if (dob != null && dob.isNotEmpty) {
-      return '${c.fullName} · sinh $dob';
-    }
-    return c.fullName;
   }
 
   String _guardianLabel(GuardianInfo? g) {

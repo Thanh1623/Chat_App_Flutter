@@ -6,6 +6,7 @@ abstract final class AppRoutes {
   static const profile = '/me';
   static const editProfile = '/me/edit';
   static const employeeProfile = '/me/employee-profile';
+  static const employeeProfileEdit = '/me/employee-profile/edit';
   static const chat = '/chat/:conversationId';
   static const settings = '/me';
   static const newChat = '/new-chat';

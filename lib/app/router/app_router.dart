@@ -9,6 +9,7 @@ import 'package:chat_app/features/conversations/domain/entities/conversation.dar
 import 'package:chat_app/features/conversations/presentation/conversations_page.dart';
 import 'package:chat_app/features/conversations/presentation/create_group_page.dart';
 import 'package:chat_app/features/profile/presentation/edit_profile_page.dart';
+import 'package:chat_app/features/profile/presentation/employee_profile_edit_page.dart';
 import 'package:chat_app/features/profile/presentation/employee_profile_page.dart';
 import 'package:chat_app/features/profile/presentation/profile_page.dart';
 import 'package:chat_app/features/profile/presentation/user_profile_page.dart';
@@ -97,6 +98,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: _rootNavigatorKey,
         path: AppRoutes.employeeProfile,
         builder: (context, state) => const EmployeeProfilePage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: AppRoutes.employeeProfileEdit,
+        builder: (context, state) => const EmployeeProfileEditPage(),
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,

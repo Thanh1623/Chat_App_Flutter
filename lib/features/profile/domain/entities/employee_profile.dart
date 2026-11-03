@@ -84,6 +84,104 @@ class EmployeeProfile {
   final BankAccountInfo? bankAccount;
   final String? vehicles;
 
+  factory EmployeeProfile.fromJson(Map<String, dynamic> json) {
+    String? str(String key) {
+      final v = json[key]?.toString().trim();
+      return (v == null || v.isEmpty) ? null : v;
+    }
+
+    Map<String, dynamic>? obj(String key) {
+      final v = json[key];
+      return v is Map ? Map<String, dynamic>.from(v) : null;
+    }
+
+    EmergencyContact? emergency() {
+      final m = obj('emergencyContact');
+      if (m == null) return null;
+      return EmergencyContact(
+        name: m['name']?.toString() ?? '',
+        relationship: m['relationship']?.toString() ?? '',
+        phone: m['phone']?.toString() ?? '',
+      );
+    }
+
+    GuardianInfo? guardian(String key) {
+      final m = obj(key);
+      if (m == null) return null;
+      return GuardianInfo(
+        name: m['name']?.toString() ?? '',
+        phone: m['phone']?.toString() ?? '',
+        occupation: m['occupation']?.toString(),
+      );
+    }
+
+    BankAccountInfo? bank() {
+      final m = obj('bankAccount');
+      if (m == null) return null;
+      return BankAccountInfo(
+        bankName: m['bankName']?.toString() ?? '',
+        accountNumber: m['accountNumber']?.toString() ?? '',
+        branch: m['branch']?.toString() ?? '',
+      );
+    }
+
+    Color? cardColor() {
+      final raw = str('cardColor');
+      if (raw == null) return null;
+      final hex = raw.replaceFirst('#', '');
+      final value = int.tryParse(hex.length == 6 ? 'FF$hex' : hex, radix: 16);
+      return value == null ? null : Color(value);
+    }
+
+    final rawChildren = json['children'];
+    return EmployeeProfile(
+      userId: json['id']?.toString() ?? '',
+      startDate: str('startDate'),
+      employeeCode: str('employeeCode'),
+      employeeSeq: str('employeeSeq'),
+      contractType: str('contractType'),
+      jobTitle: str('jobTitle'),
+      directManagerName: str('directManagerName'),
+      employmentStatus: str('employmentStatus'),
+      cardColor: cardColor(),
+      managementBlockCode: str('managementBlockCode'),
+      department: str('department'),
+      departmentGroup: str('departmentGroup'),
+      specialtyPosition: str('specialtyPosition'),
+      fullName: str('fullName'),
+      gender: str('gender'),
+      dateOfBirth: str('dateOfBirth'),
+      phone: str('phone'),
+      email: str('email'),
+      address: str('address'),
+      permanentAddress: str('permanentAddress'),
+      educationLevel: str('educationLevel'),
+      schoolName: str('schoolName'),
+      citizenIdNumber: str('citizenIdNumber'),
+      citizenIdIssuedPlace: str('citizenIdIssuedPlace'),
+      citizenIdFrontUrl: str('citizenIdFrontUrl'),
+      citizenIdBackUrl: str('citizenIdBackUrl'),
+      maritalStatus: str('maritalStatus'),
+      ethnicity: str('ethnicity'),
+      religion: str('religion'),
+      socialInsuranceNumber: str('socialInsuranceNumber'),
+      children: rawChildren is List
+          ? [
+              for (final c in rawChildren.whereType<Map>())
+                EmployeeChild(
+                  fullName: c['fullName']?.toString() ?? '',
+                  dateOfBirth: c['dateOfBirth']?.toString(),
+                ),
+            ]
+          : const [],
+      emergencyContact: emergency(),
+      guardianFather: guardian('guardianFather'),
+      guardianMother: guardian('guardianMother'),
+      bankAccount: bank(),
+      vehicles: str('vehicles'),
+    );
+  }
+
   /// ponytail: dữ liệu mẫu gắn user đăng nhập — thay bằng API sau.
   factory EmployeeProfile.preview(User? user) {
     final name = user?.displayName ?? 'Nguyễn Văn A';
@@ -96,11 +194,11 @@ class EmployeeProfile {
       employeeCode: 'NV-2022-0847',
       employeeSeq: '1284',
       contractType: 'Chính thức',
-      jobTitle: 'Chuyên viên kinh doanh',
+      jobTitle: 'Fulltime',
       directManagerName: 'Trần Minh Quân',
       employmentStatus: 'Đang làm việc',
       cardColor: const Color(0xFF0068FF),
-      managementBlockCode: 'KD-01',
+      managementBlockCode: 'Lê Thị Hoa',
       department: _deptFromTeam(team),
       departmentGroup: 'Nhóm B2B Miền Bắc',
       specialtyPosition: 'Sales Executive',
@@ -115,7 +213,7 @@ class EmployeeProfile {
       schoolName: 'ĐH Kinh tế Quốc dân',
       citizenIdNumber: '001096012345',
       citizenIdIssuedPlace: 'Cục Cảnh sát QLHC về TTXH',
-      maritalStatus: 'Độc thân',
+      maritalStatus: 'Chưa kết hôn',
       ethnicity: 'Kinh',
       religion: 'Không',
       socialInsuranceNumber: '7912345678',
