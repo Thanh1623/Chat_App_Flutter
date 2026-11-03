@@ -19,6 +19,13 @@ class ChatSocketClient {
   final _roomUpdates = StreamController<Map<String, dynamic>>.broadcast();
   final _tasks = StreamController<Map<String, dynamic>>.broadcast();
 
+  final _presence = StreamController<Set<String>>.broadcast();
+  Set<String> _onlineIds = const {};
+
+  /// Danh sách user đang online (BE broadcast `presence.online`).
+  Stream<Set<String>> get presence => _presence.stream;
+  Set<String> get onlineIds => _onlineIds;
+
   Stream<Map<String, dynamic>> get messages => _messages.stream;
   Stream<Map<String, dynamic>> get reads => _reads.stream;
   Stream<Map<String, dynamic>> get roomUpdates => _roomUpdates.stream;
@@ -63,6 +70,7 @@ class ChatSocketClient {
         if (kDebugMode) {
           debugPrint('socket connected, join $_roomId');
         }
+        _socket!.emit('presence.get');
         final roomId = _roomId;
         if (roomId != null) {
           _socket!.emit('join', roomId);
@@ -107,6 +115,21 @@ class ChatSocketClient {
         if (json == null) return;
         _roomUpdates.add(json);
       })
+      ..on('presence.online', (data) {
+        final ids = <String>{};
+        void collect(dynamic item) {
+          if (item is Map) {
+            final id = item['id']?.toString();
+            if (id != null && id.isNotEmpty) ids.add(id);
+          } else if (item is List) {
+            item.forEach(collect);
+          }
+        }
+
+        collect(data);
+        _onlineIds = ids;
+        _presence.add(ids);
+      })
       ..on('task', (data) {
         final json = _asJsonMap(data);
         if (json == null) return;
@@ -126,6 +149,8 @@ class ChatSocketClient {
   void disconnect() {
     _roomId = null;
     _token = null;
+    _onlineIds = const {};
+    _presence.add(const {});
     _socket?.dispose();
     _socket = null;
   }

@@ -1,3 +1,4 @@
+import 'package:chat_app/features/presence/presentation/online_dot.dart';
 import 'package:chat_app/app/router/chat_route_args.dart';
 import 'package:chat_app/app/router/routes.dart';
 import 'package:chat_app/core/widgets/error_view.dart';
@@ -264,10 +265,13 @@ class _FriendTileState extends ConsumerState<_FriendTile> {
         ? user.email
         : '${_teamLabel(user.team)} · ${user.email}';
     return ListTile(
-      leading: ChatMessageAvatar(
-        displayName: user.name,
-        avatarUrl: user.avatarUrl,
-        radius: 22,
+      leading: OnlineDot(
+        userId: user.id,
+        child: ChatMessageAvatar(
+          displayName: user.name,
+          avatarUrl: user.avatarUrl,
+          radius: 22,
+        ),
       ),
       title: Text(user.name, maxLines: 1, overflow: TextOverflow.ellipsis),
       subtitle: Text(

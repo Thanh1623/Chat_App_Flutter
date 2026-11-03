@@ -1,3 +1,5 @@
+import 'package:chat_app/features/presence/presentation/online_dot.dart';
+import 'package:chat_app/features/presence/presentation/presence_provider.dart';
 import 'package:chat_app/core/widgets/error_view.dart';
 import 'package:chat_app/features/contacts/domain/entities/contact_user.dart';
 import 'package:chat_app/features/contacts/presentation/providers/contacts_provider.dart';
@@ -42,10 +44,14 @@ class _ProfileBody extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 24, 16, 32),
       children: [
         Center(
-          child: ProfileAvatar(
-            displayName: user.name,
-            avatarUrl: user.avatarUrl,
-            radius: 48,
+          child: OnlineDot(
+            userId: user.id,
+            size: 18,
+            child: ProfileAvatar(
+              displayName: user.name,
+              avatarUrl: user.avatarUrl,
+              radius: 48,
+            ),
           ),
         ),
         const SizedBox(height: 16),
@@ -57,6 +63,24 @@ class _ProfileBody extends StatelessWidget {
                 ),
             textAlign: TextAlign.center,
           ),
+        ),
+        Consumer(
+          builder: (context, ref, _) {
+            final online = ref.watch(isUserOnlineProvider(user.id));
+            return Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                online ? 'Đang hoạt động' : 'Không hoạt động',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: online
+                      ? onlineGreen
+                      : Theme.of(context).colorScheme.outline,
+                ),
+              ),
+            );
+          },
         ),
         const SizedBox(height: 24),
         _InfoTile(

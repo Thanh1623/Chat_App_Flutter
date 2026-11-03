@@ -1,3 +1,4 @@
+import 'package:chat_app/features/presence/presentation/online_dot.dart';
 import 'package:chat_app/app/router/chat_route_args.dart';
 import 'package:chat_app/app/router/routes.dart';
 import 'package:chat_app/core/widgets/unread_count_badge.dart';
@@ -45,6 +46,12 @@ class ConversationListTile extends StatelessWidget {
         avatarUrl: avatarUrl,
         radius: 22,
       );
+      if (!isGroup) {
+        leadingAvatar = OnlineDot(
+          userId: conversation.peerUserId,
+          child: leadingAvatar,
+        );
+      }
     }
 
     return ListTile(

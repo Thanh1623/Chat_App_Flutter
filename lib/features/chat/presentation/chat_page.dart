@@ -1,3 +1,4 @@
+import 'package:chat_app/features/presence/presentation/presence_provider.dart';
 import 'package:chat_app/app/router/routes.dart';
 import 'package:chat_app/core/storage/session_storage.dart';
 import 'package:chat_app/features/auth/presentation/providers/auth_controller.dart';
@@ -355,8 +356,31 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         foregroundColor: Colors.white,
         title: InkWell(
           onTap: widget.isGroup ? _openGroupSettings : _openDirectPeerProfile,
-          child: Text(
-            appBarTitle?.isNotEmpty == true ? appBarTitle! : 'Chat',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                appBarTitle?.isNotEmpty == true ? appBarTitle! : 'Chat',
+              ),
+              if (!widget.isGroup && _directPeerUserId() != null)
+                Consumer(
+                  builder: (context, ref, _) {
+                    final online = ref.watch(
+                      isUserOnlineProvider(_directPeerUserId()),
+                    );
+                    return Text(
+                      online ? 'Đang hoạt động' : 'Không hoạt động',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w400,
+                        color: online
+                            ? const Color(0xFFB9F6CA)
+                            : Colors.white70,
+                      ),
+                    );
+                  },
+                ),
+            ],
           ),
         ),
         actions: [
