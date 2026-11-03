@@ -28,6 +28,7 @@ abstract final class ApiEndpoints {
   static String roomMember(String roomId, String userId) =>
       '/rooms/$roomId/members/$userId';
   static const roomsDirect = '/rooms/direct';
+  static const roomsCloud = '/rooms/cloud';
   static const createRoom = '/rooms'; // POST
   static String deleteRoom(String id) => '/rooms/$id';
   static String roomSettings(String roomId) => '/rooms/$roomId/settings';

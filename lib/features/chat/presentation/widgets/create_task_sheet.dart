@@ -5,6 +5,7 @@ Future<CreateTaskDraft?> showCreateTaskSheet({
   required BuildContext context,
   required List<ContactUser> members,
   String? suggestedAssigneeId,
+  CreateTaskDraft? editing,
 }) {
   return showModalBottomSheet<CreateTaskDraft>(
     context: context,
@@ -15,6 +16,7 @@ Future<CreateTaskDraft?> showCreateTaskSheet({
       child: CreateTaskSheet(
         members: members,
         suggestedAssigneeId: suggestedAssigneeId,
+        editing: editing,
       ),
     ),
   );
@@ -39,10 +41,14 @@ class CreateTaskSheet extends StatefulWidget {
     super.key,
     required this.members,
     this.suggestedAssigneeId,
+    this.editing,
   });
 
   final List<ContactUser> members;
   final String? suggestedAssigneeId;
+
+  /// Có giá trị → chế độ sửa việc (không đổi người nhận).
+  final CreateTaskDraft? editing;
 
   @override
   State<CreateTaskSheet> createState() => _CreateTaskSheetState();
@@ -50,12 +56,23 @@ class CreateTaskSheet extends StatefulWidget {
 
 class _CreateTaskSheetState extends State<CreateTaskSheet> {
   final _title = TextEditingController();
+  final _notes = TextEditingController();
   late String? _assigneeId;
   DateTime? _dueAt;
+
+  bool get _isEdit => widget.editing != null;
 
   @override
   void initState() {
     super.initState();
+    final editing = widget.editing;
+    if (editing != null) {
+      _title.text = editing.title;
+      _notes.text = editing.notes ?? '';
+      _dueAt = editing.dueAt;
+      _assigneeId = editing.assigneeId;
+      return;
+    }
     final suggested = widget.suggestedAssigneeId?.trim() ?? '';
     final ids = widget.members.map((m) => m.id).toSet();
     if (suggested.isNotEmpty && ids.contains(suggested)) {
@@ -70,6 +87,7 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
   @override
   void dispose() {
     _title.dispose();
+    _notes.dispose();
     super.dispose();
   }
 
@@ -77,9 +95,46 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
     final title = _title.text.trim();
     final assignee = _assigneeId?.trim() ?? '';
     if (title.isEmpty || assignee.isEmpty) return;
+    final notes = _notes.text.trim();
     Navigator.of(context).pop(
-      CreateTaskDraft(title: title, assigneeId: assignee, dueAt: _dueAt),
+      CreateTaskDraft(
+        title: title,
+        assigneeId: assignee,
+        notes: notes.isEmpty ? null : notes,
+        dueAt: _dueAt,
+      ),
     );
+  }
+
+  Future<void> _pickDue() async {
+    final now = DateTime.now();
+    final base = _dueAt ?? now;
+    final date = await showDatePicker(
+      context: context,
+      initialDate: base,
+      firstDate: DateTime(now.year - 1),
+      lastDate: DateTime(now.year + 5),
+    );
+    if (date == null || !mounted) return;
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(base),
+    );
+    if (time == null) return;
+    setState(() {
+      _dueAt = DateTime(
+        date.year,
+        date.month,
+        date.day,
+        time.hour,
+        time.minute,
+      );
+    });
+  }
+
+  String _dueText(DateTime d) {
+    String two(int v) => v.toString().padLeft(2, '0');
+    return '${two(d.day)}/${two(d.month)}/${d.year} ${two(d.hour)}:${two(d.minute)}';
   }
 
   @override
@@ -106,8 +161,8 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
-            'Giao việc',
+          Text(
+            _isEdit ? 'Sửa việc' : 'Giao việc',
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
@@ -124,19 +179,31 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
             ),
           ),
           const SizedBox(height: 12),
-          DropdownButtonFormField<String>(
-            // ignore: deprecated_member_use
-            value: _assigneeId,
+          TextField(
+            controller: _notes,
+            minLines: 2,
+            maxLines: 4,
             decoration: const InputDecoration(
-              labelText: 'Giao cho',
+              labelText: 'Mô tả chi tiết',
               border: OutlineInputBorder(),
             ),
-            items: [
-              for (final m in widget.members)
-                DropdownMenuItem(value: m.id, child: Text(m.name)),
-            ],
-            onChanged: (id) => setState(() => _assigneeId = id),
           ),
+          if (!_isEdit) ...[
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              // ignore: deprecated_member_use
+              value: _assigneeId,
+              decoration: const InputDecoration(
+                labelText: 'Giao cho',
+                border: OutlineInputBorder(),
+              ),
+              items: [
+                for (final m in widget.members)
+                  DropdownMenuItem(value: m.id, child: Text(m.name)),
+              ],
+              onChanged: (id) => setState(() => _assigneeId = id),
+            ),
+          ],
           const SizedBox(height: 12),
           Wrap(
             spacing: 8,
@@ -151,6 +218,15 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
                 selected: _isTomorrow9(),
                 onSelected: (_) => setState(() => _dueAt = _tomorrowAt(9)),
               ),
+              ActionChip(
+                avatar: const Icon(Icons.event, size: 16),
+                label: Text(
+                  _dueAt != null && !_isToday18() && !_isTomorrow9()
+                      ? _dueText(_dueAt!)
+                      : 'Chọn ngày giờ…',
+                ),
+                onPressed: _pickDue,
+              ),
               ChoiceChip(
                 label: const Text('Không hạn'),
                 selected: _dueAt == null,
@@ -161,7 +237,7 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
           const SizedBox(height: 16),
           FilledButton(
             onPressed: canSubmit ? _submit : null,
-            child: const Text('Giao'),
+            child: Text(_isEdit ? 'Lưu' : 'Giao'),
           ),
         ],
       ),
@@ -182,7 +258,10 @@ class _CreateTaskSheetState extends State<CreateTaskSheet> {
     final d = _dueAt;
     if (d == null) return false;
     final t = _todayAt(18);
-    return d.year == t.year && d.month == t.month && d.day == t.day && d.hour == 18;
+    return d.year == t.year &&
+        d.month == t.month &&
+        d.day == t.day &&
+        d.hour == 18;
   }
 
   bool _isTomorrow9() {

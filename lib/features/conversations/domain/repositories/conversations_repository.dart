@@ -12,6 +12,9 @@ abstract interface class ConversationsRepository {
 
   Future<Conversation> openDirect(String userId);
 
+  /// Phòng "Cloud của tôi" (chỉ mình mình) — dùng để tự giao việc.
+  Future<Conversation> openCloud();
+
   Future<Conversation> createGroup({
     required String name,
     required List<String> memberIds,

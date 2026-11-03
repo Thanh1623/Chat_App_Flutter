@@ -61,4 +61,42 @@ class MyTasksNotifier extends AsyncNotifier<List<WorkTask>> {
       state = AsyncValue.error(e, StackTrace.current);
     }
   }
+
+  Future<void> create({
+    required String roomId,
+    required String title,
+    required String assigneeId,
+    String? notes,
+    DateTime? dueAt,
+  }) async {
+    await ref.read(workRepositoryProvider).createTask(
+          roomId: roomId,
+          title: title,
+          assigneeId: assigneeId,
+          notes: notes,
+          dueAt: dueAt,
+        );
+    await refresh();
+  }
+
+  Future<void> edit({
+    required String taskId,
+    required String title,
+    required String notes,
+    DateTime? dueAt,
+  }) async {
+    await ref.read(workRepositoryProvider).updateTask(
+          taskId: taskId,
+          title: title,
+          notes: notes,
+          dueAt: dueAt,
+          clearDue: dueAt == null,
+        );
+    await refresh();
+  }
+
+  Future<void> remove(String taskId) async {
+    await ref.read(workRepositoryProvider).deleteTask(taskId);
+    await refresh();
+  }
 }

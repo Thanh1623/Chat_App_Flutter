@@ -69,7 +69,7 @@ class TaskNotice {
 
   bool shouldShowBanner(String? myId) {
     final me = myId?.trim() ?? '';
-    if (me.isEmpty || me == actorId) return false;
+    if (me.isEmpty || me == actorId || action == 'deleted') return false;
     if (action == 'created') return me == assigneeId;
     return me == creatorId || me == assigneeId;
   }

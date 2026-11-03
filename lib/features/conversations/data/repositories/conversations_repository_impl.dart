@@ -35,6 +35,16 @@ class ConversationsRepositoryImpl implements ConversationsRepository {
   }
 
   @override
+  Future<Conversation> openCloud() async {
+    try {
+      final model = await _remote.openCloud();
+      return model.toEntity();
+    } catch (e) {
+      throw mapException(e);
+    }
+  }
+
+  @override
   Future<Conversation> createGroup({
     required String name,
     required List<String> memberIds,

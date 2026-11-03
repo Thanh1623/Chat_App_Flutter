@@ -114,6 +114,13 @@ class ConversationsRemoteDataSource {
     return ConversationModel.fromJson(response.data ?? {});
   }
 
+  Future<ConversationModel> openCloud() async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      ApiEndpoints.roomsCloud,
+    );
+    return ConversationModel.fromJson(response.data ?? {});
+  }
+
   Future<ConversationModel> createGroup({
     required String name,
     required List<String> memberIds,

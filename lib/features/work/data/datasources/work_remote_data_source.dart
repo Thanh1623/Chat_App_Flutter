@@ -50,17 +50,23 @@ class WorkRemoteDataSource {
     String? title,
     String? notes,
     DateTime? dueAt,
+    bool clearDue = false,
   }) async {
     final data = <String, dynamic>{
       'status': ?status,
       'title': ?title,
       'notes': ?notes,
       if (dueAt != null) 'dueAt': dueAt.toUtc().toIso8601String(),
+      if (clearDue && dueAt == null) 'dueAt': null,
     };
     final response = await _dio.patch<Map<String, dynamic>>(
       ApiEndpoints.task(taskId),
       data: data,
     );
     return MessageModel.fromJson(response.data ?? {}).toEntity();
+  }
+
+  Future<void> deleteTask(String taskId) async {
+    await _dio.delete<void>(ApiEndpoints.task(taskId));
   }
 }

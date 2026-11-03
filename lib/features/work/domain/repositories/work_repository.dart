@@ -18,5 +18,8 @@ abstract interface class WorkRepository {
     String? title,
     String? notes,
     DateTime? dueAt,
+    bool clearDue = false,
   });
+
+  Future<void> deleteTask(String taskId);
 }

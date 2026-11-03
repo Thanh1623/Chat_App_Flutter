@@ -46,6 +46,7 @@ class WorkRepositoryImpl implements WorkRepository {
     String? title,
     String? notes,
     DateTime? dueAt,
+    bool clearDue = false,
   }) async {
     try {
       return await _remote.updateTask(
@@ -54,7 +55,17 @@ class WorkRepositoryImpl implements WorkRepository {
         title: title,
         notes: notes,
         dueAt: dueAt,
+        clearDue: clearDue,
       );
+    } catch (e) {
+      throw mapException(e);
+    }
+  }
+
+  @override
+  Future<void> deleteTask(String taskId) async {
+    try {
+      await _remote.deleteTask(taskId);
     } catch (e) {
       throw mapException(e);
     }
