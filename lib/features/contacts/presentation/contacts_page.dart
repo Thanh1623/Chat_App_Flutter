@@ -261,9 +261,9 @@ class _FriendTileState extends ConsumerState<_FriendTile> {
   @override
   Widget build(BuildContext context) {
     final user = widget.user;
-    final subtitle = user.team.trim().isEmpty
+    final subtitle = user.orgLabel.isEmpty
         ? user.email
-        : '${_teamLabel(user.team)} · ${user.email}';
+        : '${user.orgLabel} · ${user.email}';
     return ListTile(
       leading: OnlineDot(
         userId: user.id,
@@ -316,17 +316,4 @@ String _letter(String name) {
   final t = name.trim();
   if (t.isEmpty) return '#';
   return t.substring(0, 1).toUpperCase();
-}
-
-String _teamLabel(String team) {
-  switch (team.toLowerCase()) {
-    case 'sale':
-      return 'Team Sale';
-    case 'traffic':
-      return 'Team Traffic';
-    case 'kho':
-      return 'Kho';
-    default:
-      return team;
-  }
 }

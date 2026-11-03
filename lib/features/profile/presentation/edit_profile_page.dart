@@ -14,7 +14,6 @@ class EditProfilePage extends ConsumerStatefulWidget {
 
 class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   final _formKey = GlobalKey<FormState>();
-  late final TextEditingController _name;
   late final TextEditingController _email;
   final _currentPassword = TextEditingController();
   final _newPassword = TextEditingController();
@@ -25,13 +24,11 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
   void initState() {
     super.initState();
     final user = ref.read(authControllerProvider).user;
-    _name = TextEditingController(text: user?.displayName ?? '');
     _email = TextEditingController(text: user?.email ?? '');
   }
 
   @override
   void dispose() {
-    _name.dispose();
     _email.dispose();
     _currentPassword.dispose();
     _newPassword.dispose();
@@ -43,7 +40,6 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     if (!_formKey.currentState!.validate()) return;
 
     final user = ref.read(authControllerProvider).user;
-    final name = _name.text.trim();
     final email = _email.text.trim();
 
     String? password;
@@ -53,12 +49,10 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
       currentPassword = _currentPassword.text;
     }
 
-    final nameArg =
-        user == null || name != user.displayName ? name : null;
     final emailArg = user == null || email != (user.email ?? '') ? email : null;
 
     // Avatar đã lưu qua POST /auth/me/avatar — BE PATCH từ chối body không đổi.
-    if (nameArg == null && emailArg == null && !_changePassword) {
+    if (emailArg == null && !_changePassword) {
       if (!mounted) return;
       context.pop();
       ScaffoldMessenger.of(context).showSnackBar(
@@ -68,7 +62,6 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
     }
 
     final ok = await ref.read(authControllerProvider.notifier).updateProfile(
-          name: nameArg,
           email: emailArg,
           password: password,
           currentPassword: currentPassword,
@@ -134,21 +127,6 @@ class _EditProfilePageState extends ConsumerState<EditProfilePage> {
               ),
             ),
             const SizedBox(height: 24),
-            TextFormField(
-              controller: _name,
-              decoration: const InputDecoration(
-                labelText: 'Tên hiển thị',
-                border: OutlineInputBorder(),
-              ),
-              textInputAction: TextInputAction.next,
-              validator: (v) {
-                if (v == null || v.trim().isEmpty) {
-                  return 'Nhập tên';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
             TextFormField(
               controller: _email,
               decoration: const InputDecoration(

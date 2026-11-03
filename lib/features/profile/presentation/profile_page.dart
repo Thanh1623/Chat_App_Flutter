@@ -1,3 +1,4 @@
+import 'package:chat_app/features/profile/presentation/providers/employee_profile_provider.dart';
 import 'package:chat_app/app/router/routes.dart';
 import 'package:chat_app/app/theme/app_accent.dart';
 import 'package:chat_app/app/theme/theme_controller.dart';
@@ -336,15 +337,18 @@ class _ProfileHeader extends StatelessWidget {
   }
 }
 
-class _InfoCard extends StatelessWidget {
+class _InfoCard extends ConsumerWidget {
   const _InfoCard({required this.user});
 
   final User user;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final email = user.email?.trim() ?? '';
-    final team = _teamLabel(user.team);
+    final profile = ref.watch(employeeProfileProvider).valueOrNull;
+    final team = [profile?.department, profile?.departmentGroup]
+        .where((e) => e != null && e.trim().isNotEmpty)
+        .join(' · ');
     final primary = Theme.of(context).colorScheme.primary;
     final rows = <Widget>[
       _InfoRow(
@@ -357,7 +361,7 @@ class _InfoCard extends StatelessWidget {
         const Divider(height: 1, indent: 56),
         _InfoRow(
           icon: Icons.groups_outlined,
-          label: 'Team',
+          label: 'Phòng ban',
           value: team,
           iconColor: primary,
         ),
@@ -470,18 +474,5 @@ class _MenuTile extends StatelessWidget {
             )
           : null,
     );
-  }
-}
-
-String _teamLabel(String team) {
-  switch (team.toLowerCase()) {
-    case 'sale':
-      return 'Team Sale';
-    case 'traffic':
-      return 'Team Traffic';
-    case 'kho':
-      return 'Kho';
-    default:
-      return team;
   }
 }

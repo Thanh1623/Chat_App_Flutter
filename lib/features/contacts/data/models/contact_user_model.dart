@@ -7,6 +7,8 @@ class ContactUserModel {
     required this.email,
     this.avatarUrl = '',
     this.team = '',
+    this.department = '',
+    this.departmentGroup = '',
   });
 
   final String id;
@@ -14,6 +16,8 @@ class ContactUserModel {
   final String email;
   final String avatarUrl;
   final String team;
+  final String department;
+  final String departmentGroup;
 
   ContactUser toEntity() => ContactUser(
     id: id,
@@ -21,6 +25,8 @@ class ContactUserModel {
     email: email,
     avatarUrl: avatarUrl,
     team: team,
+    department: department,
+    departmentGroup: departmentGroup,
   );
 
   factory ContactUserModel.fromJson(Map<String, dynamic> json) {
@@ -32,6 +38,8 @@ class ContactUserModel {
       email: json['email']?.toString() ?? '',
       avatarUrl: json['avatarUrl']?.toString() ?? '',
       team: json['team']?.toString() ?? '',
+      department: json['department']?.toString() ?? '',
+      departmentGroup: json['departmentGroup']?.toString() ?? '',
     );
   }
 }

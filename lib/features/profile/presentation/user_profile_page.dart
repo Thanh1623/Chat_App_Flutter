@@ -38,7 +38,7 @@ class _ProfileBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final primary = Theme.of(context).colorScheme.primary;
-    final team = _teamLabel(user.team);
+    final org = user.orgLabel;
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 24, 16, 32),
@@ -89,12 +89,12 @@ class _ProfileBody extends StatelessWidget {
           value: user.email.isEmpty ? '—' : user.email,
           iconColor: primary,
         ),
-        if (team.isNotEmpty) ...[
+        if (org.isNotEmpty) ...[
           const SizedBox(height: 12),
           _InfoTile(
             icon: Icons.groups_outlined,
-            label: 'Team',
-            value: team,
+            label: 'Phòng ban',
+            value: org,
             iconColor: primary,
           ),
         ],
@@ -147,18 +147,5 @@ class _InfoTile extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-String _teamLabel(String team) {
-  switch (team.toLowerCase()) {
-    case 'sale':
-      return 'Team Sale';
-    case 'traffic':
-      return 'Team Traffic';
-    case 'kho':
-      return 'Kho';
-    default:
-      return team;
   }
 }

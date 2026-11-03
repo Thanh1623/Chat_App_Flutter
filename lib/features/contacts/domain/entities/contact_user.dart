@@ -5,6 +5,8 @@ class ContactUser {
     required this.email,
     this.avatarUrl = '',
     this.team = '',
+    this.department = '',
+    this.departmentGroup = '',
   });
 
   final String id;
@@ -12,4 +14,11 @@ class ContactUser {
   final String email;
   final String avatarUrl;
   final String team;
+  final String department;
+  final String departmentGroup;
+
+  /// "Phòng ban · Nhóm" từ hồ sơ nhân sự; rỗng nếu chưa có.
+  String get orgLabel => [department, departmentGroup]
+      .where((e) => e.trim().isNotEmpty)
+      .join(' · ');
 }

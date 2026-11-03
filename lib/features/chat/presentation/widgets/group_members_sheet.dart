@@ -260,7 +260,11 @@ class _GroupMembersSheetState extends ConsumerState<GroupMembersSheet> {
                       radius: 20,
                     ),
                     title: Text(user.name),
-                    subtitle: Text('${user.email} · ${user.team}'),
+                    subtitle: Text(
+                      user.orgLabel.isEmpty
+                          ? user.email
+                          : '${user.email} · ${user.orgLabel}',
+                    ),
                     enabled: !_busy,
                     onTap: () => _add(user),
                   );
