@@ -51,3 +51,4 @@ app.*.map.json
 .cursor/rules/
 
 .env*
+CLAUDE.md
