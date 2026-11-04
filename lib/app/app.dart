@@ -1,5 +1,6 @@
 import 'package:chat_app/app/router/app_router.dart';
 import 'package:chat_app/app/router/routes.dart';
+import 'package:chat_app/app/session_reset.dart';
 import 'package:chat_app/app/theme/app_theme.dart';
 import 'package:chat_app/app/theme/theme_controller.dart';
 import 'package:chat_app/features/work/presentation/widgets/incoming_task_banner.dart';
@@ -12,6 +13,7 @@ class App extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(sessionResetProvider);
     final router = ref.watch(appRouterProvider);
     final accent = ref.watch(themeControllerProvider).accent;
 
