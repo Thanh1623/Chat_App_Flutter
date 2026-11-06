@@ -73,6 +73,11 @@ class MainShell extends ConsumerWidget {
             label: 'Danh bạ',
           ),
           NavigationDestination(
+            icon: const Icon(Icons.auto_stories_outlined),
+            selectedIcon: Icon(Icons.auto_stories, color: primary),
+            label: 'Nhật ký',
+          ),
+          NavigationDestination(
             icon: const Icon(Icons.person_outline),
             selectedIcon: Icon(Icons.person, color: primary),
             label: 'Cá nhân',

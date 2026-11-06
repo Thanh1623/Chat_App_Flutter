@@ -8,6 +8,7 @@ import 'package:chat_app/features/contacts/presentation/contacts_page.dart';
 import 'package:chat_app/features/conversations/domain/entities/conversation.dart';
 import 'package:chat_app/features/conversations/presentation/conversations_page.dart';
 import 'package:chat_app/features/conversations/presentation/create_group_page.dart';
+import 'package:chat_app/features/diary/presentation/diary_page.dart';
 import 'package:chat_app/features/profile/presentation/edit_profile_page.dart';
 import 'package:chat_app/features/profile/presentation/employee_profile_edit_page.dart';
 import 'package:chat_app/features/profile/presentation/employee_profile_page.dart';
@@ -76,6 +77,14 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: AppRoutes.contacts,
                 builder: (context, state) => const ContactsPage(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.diary,
+                builder: (context, state) => const DiaryPage(),
               ),
             ],
           ),

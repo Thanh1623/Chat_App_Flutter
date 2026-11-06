@@ -3,6 +3,7 @@ import 'package:chat_app/features/auth/presentation/providers/auth_controller.da
 import 'package:chat_app/features/chat/presentation/providers/chat_controller.dart';
 import 'package:chat_app/features/contacts/presentation/providers/contacts_provider.dart';
 import 'package:chat_app/features/conversations/presentation/providers/conversations_provider.dart';
+import 'package:chat_app/features/diary/presentation/providers/diary_feed_provider.dart';
 import 'package:chat_app/features/presence/presentation/presence_provider.dart';
 import 'package:chat_app/features/profile/presentation/providers/employee_profile_provider.dart';
 import 'package:chat_app/features/work/presentation/providers/task_due_banner_provider.dart';
@@ -40,6 +41,7 @@ final sessionResetProvider = Provider<void>((ref) {
       ref.invalidate(onlineUserIdsProvider);
       ref.invalidate(employeeProfileProvider);
       ref.invalidate(contactSearchProvider);
+      ref.invalidate(diaryFeedProvider);
       ref.invalidate(userProfileProvider);
       ref.invalidate(chatControllerProvider);
     },
