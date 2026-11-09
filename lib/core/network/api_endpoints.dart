@@ -50,4 +50,16 @@ abstract final class ApiEndpoints {
   static String roomTasks(String roomId) => '/rooms/$roomId/tasks';
   static const myTasks = '/tasks/mine';
   static String task(String id) => '/tasks/$id';
+
+  static const galleryAccess = '/gallery/access';
+  static const galleryAlbums = '/gallery/albums';
+  static String galleryAlbum(String id) => '/gallery/albums/$id';
+  static const galleryPhotos = '/gallery/photos';
+  static const galleryPhotosMine = '/gallery/photos/mine';
+  static const galleryPhotosFromChat = '/gallery/photos/from-chat';
+  static String galleryPhoto(String id) => '/gallery/photos/$id';
+  static String galleryPhotoApprove(String id) => '/gallery/photos/$id/approve';
+  static String galleryPhotoReject(String id) => '/gallery/photos/$id/reject';
+  static const galleryReviewPhotos = '/gallery/review/photos';
+  static const galleryReviewCount = '/gallery/review/count';
 }

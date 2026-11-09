@@ -67,6 +67,7 @@ class _DiaryPageState extends ConsumerState<DiaryPage> {
             userName: name,
             userAvatarUrl: avatar,
             onAvatarTap: () => context.go(AppRoutes.profile),
+            onGalleryTap: () => context.push(AppRoutes.gallery),
             onNotificationTap: _soon,
           ),
           Expanded(

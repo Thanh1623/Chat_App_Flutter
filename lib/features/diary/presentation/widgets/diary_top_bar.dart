@@ -9,6 +9,7 @@ class DiaryTopBar extends StatelessWidget {
     this.userAvatarUrl,
     required this.onAvatarTap,
     required this.onNotificationTap,
+    required this.onGalleryTap,
   });
 
   final TextEditingController searchController;
@@ -16,6 +17,7 @@ class DiaryTopBar extends StatelessWidget {
   final String? userAvatarUrl;
   final VoidCallback onAvatarTap;
   final VoidCallback onNotificationTap;
+  final VoidCallback onGalleryTap;
 
   @override
   Widget build(BuildContext context) {
@@ -73,6 +75,11 @@ class DiaryTopBar extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 4),
+            IconButton(
+              tooltip: 'Thư viện ảnh',
+              onPressed: onGalleryTap,
+              icon: Icon(Icons.photo_library_outlined, color: primary),
+            ),
             IconButton(
               tooltip: 'Thông báo',
               onPressed: onNotificationTap,

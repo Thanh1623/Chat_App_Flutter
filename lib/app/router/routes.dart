@@ -4,6 +4,7 @@ abstract final class AppRoutes {
   static const work = '/work';
   static const contacts = '/contacts';
   static const diary = '/diary';
+  static const gallery = '/gallery';
   static const profile = '/me';
   static const editProfile = '/me/edit';
   static const employeeProfile = '/me/employee-profile';
