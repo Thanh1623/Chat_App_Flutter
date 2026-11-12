@@ -100,6 +100,13 @@ class NewsRemoteDataSource {
     return NewsPostModel.fromJson(response.data ?? {}).toEntity();
   }
 
+  Future<NewsPost> fetchPostForEdit(String id) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      ApiEndpoints.newsPost(id),
+    );
+    return NewsPostModel.fromJson(response.data ?? {}).toEntity();
+  }
+
   Future<NewsPost> updatePost(String id, NewsPostInput input) async {
     final response = await _dio.patch<Map<String, dynamic>>(
       ApiEndpoints.newsPost(id),

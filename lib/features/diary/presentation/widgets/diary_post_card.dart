@@ -13,8 +13,8 @@ class DiaryPostCard extends StatefulWidget {
     required this.currentUserName,
     this.currentUserAvatarUrl,
     required this.onLike,
-    required this.onShare,
     required this.onSubmitComment,
+    this.onMore,
     this.onOpenDetail,
   });
 
@@ -22,8 +22,8 @@ class DiaryPostCard extends StatefulWidget {
   final String currentUserName;
   final String? currentUserAvatarUrl;
   final VoidCallback onLike;
-  final VoidCallback onShare;
   final ValueChanged<String> onSubmitComment;
+  final VoidCallback? onMore;
   final VoidCallback? onOpenDetail;
 
   @override
@@ -73,11 +73,12 @@ class _DiaryPostCardState extends State<DiaryPostCard> {
                     ],
                   ),
                 ),
-                IconButton(
-                  tooltip: 'Thêm',
-                  onPressed: widget.onShare,
-                  icon: Icon(Icons.more_horiz, color: muted),
-                ),
+                if (widget.onMore != null)
+                  IconButton(
+                    tooltip: 'Thêm',
+                    onPressed: widget.onMore,
+                    icon: Icon(Icons.more_horiz, color: muted),
+                  ),
               ],
             ),
           ),
@@ -91,6 +92,8 @@ class _DiaryPostCardState extends State<DiaryPostCard> {
               ),
               child: Text(
                 widget.post.caption.trim(),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(fontSize: 15, height: 1.35),
               ),
             ),
@@ -99,7 +102,6 @@ class _DiaryPostCardState extends State<DiaryPostCard> {
             post: widget.post,
             onLike: widget.onLike,
             onComment: () => _commentKey.currentState?.focusComposer(),
-            onShare: widget.onShare,
           ),
           DiaryCommentThread(
             key: _commentKey,

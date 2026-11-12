@@ -124,7 +124,11 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
         path: AppRoutes.diaryCompose,
-        builder: (context, state) => const DiaryComposePage(),
+        builder: (context, state) {
+          final extra = state.extra;
+          final editPostId = extra is String && extra.isNotEmpty ? extra : null;
+          return DiaryComposePage(editPostId: editPostId);
+        },
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,

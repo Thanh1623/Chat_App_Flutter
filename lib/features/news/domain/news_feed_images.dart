@@ -2,7 +2,7 @@ import 'package:chat_app/features/news/domain/entities/news_block.dart';
 import 'package:chat_app/features/news/domain/entities/news_image.dart';
 
 /// Thứ tự ảnh giống web `feedImages`: cover trước, rồi khối image trong blocks.
-List<String> newsFeedImageUrls({
+List<NewsImage> newsFeedImages({
   required NewsImage? cover,
   required List<NewsBlock> blocks,
   required List<NewsImage> images,
@@ -14,32 +14,31 @@ List<String> newsFeedImageUrls({
     imagesById[cover.id] = cover;
   }
 
-  final orderedIds = <String>[];
+  final ordered = <NewsImage>[];
   final seen = <String>{};
 
-  if (cover != null) {
-    seen.add(cover.id);
-    orderedIds.add(cover.id);
+  void add(String id) {
+    final img = imagesById[id];
+    if (img == null || !seen.add(id)) return;
+    ordered.add(img);
   }
 
+  if (cover != null) add(cover.id);
   for (final block in blocks) {
-    if (block.type == NewsBlockType.image &&
-        block.imageId != null &&
-        imagesById.containsKey(block.imageId)) {
-      final id = block.imageId!;
-      if (!seen.contains(id)) {
-        seen.add(id);
-        orderedIds.add(id);
-      }
+    if (block.type == NewsBlockType.image && block.imageId != null) {
+      add(block.imageId!);
     }
   }
+  return ordered;
+}
 
-  return orderedIds
-      .map((id) {
-        final img = imagesById[id];
-        if (img == null) return '';
-        return img.displayUrl.isNotEmpty ? img.displayUrl : img.url;
-      })
+List<String> newsFeedImageUrls({
+  required NewsImage? cover,
+  required List<NewsBlock> blocks,
+  required List<NewsImage> images,
+}) {
+  return newsFeedImages(cover: cover, blocks: blocks, images: images)
+      .map((img) => img.displayUrl.isNotEmpty ? img.displayUrl : img.url)
       .where((url) => url.isNotEmpty)
       .toList();
 }

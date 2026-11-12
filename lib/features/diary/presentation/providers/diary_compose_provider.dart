@@ -4,6 +4,7 @@ import 'package:chat_app/features/news/domain/entities/news_image.dart';
 import 'package:chat_app/features/news/domain/entities/news_post.dart';
 import 'package:chat_app/features/news/domain/entities/news_post_input.dart';
 import 'package:chat_app/features/news/domain/news_compose.dart';
+import 'package:chat_app/features/news/domain/news_feed_images.dart';
 import 'package:chat_app/features/news/domain/repositories/news_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -37,6 +38,26 @@ class DiaryComposeNotifier extends Notifier<DiaryComposeState> {
     try {
       final post = await _repo.createDraft();
       state = DiaryComposeState(post: post);
+      return true;
+    } catch (e) {
+      final message = e is Failure ? e.message : e.toString();
+      state = DiaryComposeState(error: message, busy: false);
+      return false;
+    }
+  }
+
+  Future<bool> loadExisting(String id) async {
+    state = const DiaryComposeState(busy: true);
+    try {
+      final post = await _repo.fetchPostForEdit(id);
+      state = DiaryComposeState(
+        post: post,
+        images: newsFeedImages(
+          cover: post.cover,
+          blocks: post.blocks,
+          images: post.images,
+        ),
+      );
       return true;
     } catch (e) {
       final message = e is Failure ? e.message : e.toString();
@@ -145,6 +166,12 @@ class DiaryComposeNotifier extends Notifier<DiaryComposeState> {
       );
       return null;
     }
+  }
+
+  /// Bài đã đăng: chỉ PATCH, không publish lại (khớp web).
+  Future<bool> saveEdits(String text) async {
+    final saved = await _save(text);
+    return saved != null;
   }
 
   Future<bool> publish(String text) async {

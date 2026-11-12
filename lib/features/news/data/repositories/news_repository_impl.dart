@@ -96,6 +96,15 @@ class NewsRepositoryImpl implements NewsRepository {
   }
 
   @override
+  Future<NewsPost> fetchPostForEdit(String id) async {
+    try {
+      return await _remote.fetchPostForEdit(id);
+    } catch (e) {
+      throw mapException(e);
+    }
+  }
+
+  @override
   Future<NewsPost> updatePost(String id, NewsPostInput input) async {
     try {
       return await _remote.updatePost(id, input);

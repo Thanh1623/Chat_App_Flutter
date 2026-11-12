@@ -10,6 +10,7 @@ import 'package:chat_app/features/diary/presentation/providers/diary_unread_prov
 import 'package:chat_app/features/diary/presentation/widgets/diary_compose_sheet.dart';
 import 'package:chat_app/features/diary/presentation/widgets/diary_composer.dart';
 import 'package:chat_app/features/diary/presentation/widgets/diary_post_card.dart';
+import 'package:chat_app/features/diary/presentation/widgets/diary_post_menu.dart';
 import 'package:chat_app/features/diary/presentation/widgets/diary_tokens.dart';
 import 'package:chat_app/features/diary/presentation/widgets/diary_top_bar.dart';
 import 'package:flutter/material.dart';
@@ -94,7 +95,7 @@ class _DiaryPageState extends ConsumerState<DiaryPage> {
               ref.read(diaryFeedProvider.notifier).refresh();
             },
           ),
-          Expanded(child: _buildBody(context, feed, name, avatar)),
+          Expanded(child: _buildBody(context, feed, name, avatar, user?.id)),
         ],
       ),
     );
@@ -105,6 +106,7 @@ class _DiaryPageState extends ConsumerState<DiaryPage> {
     AsyncValue<DiaryFeedState> feed,
     String name,
     String? avatar,
+    String? userId,
   ) {
     return feed.when(
       loading: () => const Center(child: CircularProgressIndicator()),
@@ -112,7 +114,7 @@ class _DiaryPageState extends ConsumerState<DiaryPage> {
         message: e.toString(),
         onRetry: () => ref.read(diaryFeedProvider.notifier).refresh(),
       ),
-      data: (state) => _buildFeed(context, state, name, avatar),
+      data: (state) => _buildFeed(context, state, name, avatar, userId),
     );
   }
 
@@ -121,6 +123,7 @@ class _DiaryPageState extends ConsumerState<DiaryPage> {
     DiaryFeedState state,
     String name,
     String? avatar,
+    String? userId,
   ) {
     final posts = _visible(state.posts);
     final muted = Theme.of(context).colorScheme.onSurfaceVariant;
@@ -169,7 +172,20 @@ class _DiaryPageState extends ConsumerState<DiaryPage> {
                     onLike: () => ref
                         .read(diaryFeedProvider.notifier)
                         .toggleLike(post.id),
-                    onShare: _soon,
+                    onMore: isOwnDiaryPost(post, userId)
+                        ? () {
+                            showDiaryPostMenu(
+                              context,
+                              onEdit: () => unawaited(
+                                openDiaryCompose(
+                                  context,
+                                  ref,
+                                  editPostId: post.id,
+                                ),
+                              ),
+                            );
+                          }
+                        : null,
                     onSubmitComment: (text) => ref
                         .read(diaryFeedProvider.notifier)
                         .addComment(post.id, text),

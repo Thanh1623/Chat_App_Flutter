@@ -7,17 +7,23 @@ import 'package:go_router/go_router.dart';
 Future<void> openDiaryCompose(
   BuildContext context,
   WidgetRef ref, {
+  String? editPostId,
   void Function(String message)? onError,
 }) async {
   if (!context.mounted) return;
 
-  final submitted = await context.push<bool>(AppRoutes.diaryCompose);
+  final submitted = await context.push<bool>(
+    AppRoutes.diaryCompose,
+    extra: editPostId,
+  );
 
   ref.read(diaryComposeProvider.notifier).reset();
 
   if (submitted == true && context.mounted) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Đã đăng bài.')),
+      SnackBar(
+        content: Text(editPostId != null ? 'Đã lưu bài.' : 'Đã đăng bài.'),
+      ),
     );
   }
 }

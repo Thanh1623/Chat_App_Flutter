@@ -33,6 +33,8 @@ abstract interface class NewsRepository {
 
   Future<NewsPost> createDraft();
 
+  Future<NewsPost> fetchPostForEdit(String id);
+
   Future<NewsPost> updatePost(String id, NewsPostInput input);
 
   Future<NewsPost> publishPost(String id, String expectedUpdatedAt);

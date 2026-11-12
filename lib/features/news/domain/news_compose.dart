@@ -93,3 +93,33 @@ ComposedPost composeToPost({
     coverImageId: images.isNotEmpty ? images.first.id : null,
   );
 }
+
+bool titleRepeats(String title, List<NewsBlock> blocks) {
+  final head = title.trim();
+  String? first;
+  for (final block in blocks) {
+    if (block.type != NewsBlockType.image) {
+      first = block.text?.trim();
+      break;
+    }
+  }
+  if (head.isEmpty || first == null) return false;
+  if (first == head) return true;
+  return head.endsWith('…') &&
+      head.length > 1 &&
+      first.startsWith(head.substring(0, head.length - 1));
+}
+
+/// Ngược composeToPost: title phụ của bài cũ thành một dòng thường.
+String postToCompose({
+  required String title,
+  required List<NewsBlock> blocks,
+}) {
+  final body = blocks
+      .where((b) => b.type != NewsBlockType.image)
+      .map((b) => b.text?.trim() ?? '')
+      .where((t) => t.isNotEmpty)
+      .join('\n\n');
+  if (title.trim().isEmpty || titleRepeats(title, blocks)) return body;
+  return body.isEmpty ? title : '$title\n$body';
+}

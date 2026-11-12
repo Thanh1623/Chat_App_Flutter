@@ -6,8 +6,10 @@ import 'package:chat_app/features/diary/presentation/mappers/diary_post_mapper.d
 import 'package:chat_app/features/diary/presentation/providers/diary_feed_provider.dart';
 import 'package:chat_app/features/diary/presentation/widgets/diary_avatar.dart';
 import 'package:chat_app/features/diary/presentation/widgets/diary_comment_thread.dart';
+import 'package:chat_app/features/diary/presentation/widgets/diary_compose_sheet.dart';
 import 'package:chat_app/features/diary/presentation/widgets/diary_image_grid.dart';
 import 'package:chat_app/features/diary/presentation/widgets/diary_post_engagement.dart';
+import 'package:chat_app/features/diary/presentation/widgets/diary_post_menu.dart';
 import 'package:chat_app/features/news/data/providers/news_repository_provider.dart';
 import 'package:chat_app/features/news/domain/entities/news_block.dart';
 import 'package:chat_app/features/news/domain/entities/news_feed_item.dart';
@@ -101,6 +103,34 @@ class _DiaryPostDetailPageState extends ConsumerState<DiaryPostDetailPage> {
                         ],
                       ),
                     ),
+                    if (isOwnDiaryPost(post, user?.id))
+                      IconButton(
+                        tooltip: 'Thêm',
+                        onPressed: () {
+                          showDiaryPostMenu(
+                            context,
+                            onEdit: () async {
+                              await openDiaryCompose(
+                                context,
+                                ref,
+                                editPostId: widget.postId,
+                              );
+                              if (!mounted) return;
+                              setState(() {
+                                _postOverride = null;
+                                _commentsOverride = null;
+                              });
+                              ref.invalidate(
+                                diaryPostDetailProvider(widget.postId),
+                              );
+                            },
+                          );
+                        },
+                        icon: Icon(
+                          Icons.more_horiz,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -125,7 +155,6 @@ class _DiaryPostDetailPageState extends ConsumerState<DiaryPostDetailPage> {
                 post: post,
                 onLike: () => _toggleLike(post),
                 onComment: () {},
-                onShare: () {},
               ),
               DiaryCommentThread(
                 comments: comments,

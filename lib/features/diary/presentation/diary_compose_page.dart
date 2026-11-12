@@ -1,4 +1,5 @@
 import 'package:chat_app/features/auth/presentation/providers/auth_controller.dart';
+import 'package:chat_app/features/diary/presentation/diary_post_detail_page.dart';
 import 'package:chat_app/features/diary/presentation/providers/diary_compose_provider.dart';
 import 'package:chat_app/features/diary/presentation/providers/diary_feed_provider.dart';
 import 'package:chat_app/features/diary/presentation/widgets/diary_avatar.dart';
@@ -11,7 +12,9 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
 class DiaryComposePage extends ConsumerStatefulWidget {
-  const DiaryComposePage({super.key});
+  const DiaryComposePage({super.key, this.editPostId});
+
+  final String? editPostId;
 
   @override
   ConsumerState<DiaryComposePage> createState() => _DiaryComposePageState();
@@ -41,12 +44,27 @@ class _DiaryComposePageState extends ConsumerState<DiaryComposePage> {
     super.dispose();
   }
 
+  bool get _editing => widget.editPostId != null;
+
   Future<void> _ensureDraft() async {
     if (_draftRequested) return;
     _draftRequested = true;
     final compose = ref.read(diaryComposeProvider);
     if (compose.post != null || compose.busy) return;
-    await ref.read(diaryComposeProvider.notifier).startDraft();
+
+    final editId = widget.editPostId;
+    final ok = editId != null
+        ? await ref.read(diaryComposeProvider.notifier).loadExisting(editId)
+        : await ref.read(diaryComposeProvider.notifier).startDraft();
+    if (!ok || !mounted) return;
+
+    if (editId != null) {
+      final post = ref.read(diaryComposeProvider).post;
+      if (post != null) {
+        _text.text = postToCompose(title: post.title, blocks: post.blocks);
+        setState(() {});
+      }
+    }
   }
 
   Future<void> _pickImages() async {
@@ -66,11 +84,18 @@ class _DiaryComposePageState extends ConsumerState<DiaryComposePage> {
     }
   }
 
-  Future<void> _publish() async {
-    final ok = await ref.read(diaryComposeProvider.notifier).publish(_text.text);
+  Future<void> _submit() async {
+    final notifier = ref.read(diaryComposeProvider.notifier);
+    final ok = _editing
+        ? await notifier.saveEdits(_text.text)
+        : await notifier.publish(_text.text);
     if (!mounted) return;
     if (ok) {
       await ref.read(diaryFeedProvider.notifier).refresh();
+      final editId = widget.editPostId;
+      if (editId != null) {
+        ref.invalidate(diaryPostDetailProvider(editId));
+      }
       if (!mounted) return;
       context.pop(true);
     }
@@ -122,16 +147,16 @@ class _DiaryComposePageState extends ConsumerState<DiaryComposePage> {
             icon: const Icon(Icons.close),
             onPressed: compose.busy ? null : _close,
           ),
-          title: const Text(
-            'Tạo bài viết',
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+          title: Text(
+            _editing ? 'Sửa bài viết' : 'Tạo bài viết',
+            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
           ),
           centerTitle: true,
           actions: [
             Padding(
               padding: const EdgeInsets.only(right: 8),
               child: FilledButton(
-                onPressed: canPost ? _publish : null,
+                onPressed: canPost ? _submit : null,
                 style: FilledButton.styleFrom(
                   backgroundColor: DiaryTokens.moment,
                   disabledBackgroundColor: const Color(0xFFE0E0E0),
@@ -147,7 +172,7 @@ class _DiaryComposePageState extends ConsumerState<DiaryComposePage> {
                           color: Colors.white,
                         ),
                       )
-                    : const Text('Đăng'),
+                    : Text(_editing ? 'Lưu' : 'Đăng'),
               ),
             ),
           ],
@@ -157,7 +182,9 @@ class _DiaryComposePageState extends ConsumerState<DiaryComposePage> {
             : compose.post == null
             ? _ErrorBody(
                 message: compose.error ??
-                    'Không tạo được bản nháp. Bạn cần quyền đăng bài (news.publish).',
+                    (_editing
+                        ? 'Không tải được bài viết.'
+                        : 'Không tạo được bản nháp. Bạn cần quyền đăng bài (news.publish).'),
                 onRetry: () {
                   _draftRequested = false;
                   _ensureDraft();

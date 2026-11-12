@@ -8,13 +8,11 @@ class DiaryPostEngagement extends StatelessWidget {
     required this.post,
     required this.onLike,
     required this.onComment,
-    required this.onShare,
   });
 
   final DiaryPost post;
   final VoidCallback onLike;
   final VoidCallback onComment;
-  final VoidCallback onShare;
 
   @override
   Widget build(BuildContext context) {
@@ -67,12 +65,6 @@ class DiaryPostEngagement extends StatelessWidget {
                 label: 'Bình luận',
                 color: muted,
                 onTap: onComment,
-              ),
-              _Action(
-                icon: Icons.share_outlined,
-                label: 'Chia sẻ',
-                color: muted,
-                onTap: onShare,
               ),
             ],
           ),
