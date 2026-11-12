@@ -62,4 +62,17 @@ abstract final class ApiEndpoints {
   static String galleryPhotoReject(String id) => '/gallery/photos/$id/reject';
   static const galleryReviewPhotos = '/gallery/review/photos';
   static const galleryReviewCount = '/gallery/review/count';
+
+  static const newsPosts = '/news/posts';
+  static String newsPost(String id) => '/news/posts/$id';
+
+  static String newsPostImages(String postId) => '/news/posts/$postId/images';
+  static String newsPostPublish(String postId) => '/news/posts/$postId/publish';
+
+  static const newsUnread = '/news/unread';
+  static const newsSeen = '/news/seen';
+  static String newsPostReaction(String postId) =>
+      '/news/posts/$postId/reaction';
+  static String newsPostComments(String postId) =>
+      '/news/posts/$postId/comments';
 }

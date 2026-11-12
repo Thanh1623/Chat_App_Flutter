@@ -5,29 +5,91 @@ class DiaryImageGrid extends StatelessWidget {
 
   final List<String> urls;
 
+  static const _gap = 3.0;
+
   @override
   Widget build(BuildContext context) {
     if (urls.isEmpty) return const SizedBox.shrink();
-    if (urls.length == 1) {
-      return _Tile(
-        url: urls.first,
-        aspectRatio: 16 / 10,
-        onTap: () => _open(context, 0),
-      );
-    }
 
-    return AspectRatio(
-      aspectRatio: 1.05,
-      child: Row(
-        children: [
-          for (var i = 0; i < 2; i++) ...[
-            if (i > 0) const SizedBox(width: 3),
-            Expanded(
-              child: _Tile(url: urls[i], onTap: () => _open(context, i)),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        if (urls.length == 1) {
+          return _Tile(
+            url: urls.first,
+            height: width * 10 / 16,
+            onTap: () => _open(context, 0),
+          );
+        }
+
+        final visible = urls.length > 4 ? 4 : urls.length;
+        final extra = urls.length - visible;
+        final cell = (width - _gap) / 2;
+        final rows = (visible + 1) ~/ 2;
+        final height = rows * cell + (rows - 1) * _gap;
+
+        return SizedBox(
+          height: height,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (var row = 0; row < rows; row++) ...[
+                if (row > 0) const SizedBox(height: _gap),
+                SizedBox(
+                  height: cell,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _mosaicCell(context, row * 2, extra, visible),
+                      ),
+                      if (row * 2 + 1 < visible) ...[
+                        const SizedBox(width: _gap),
+                        Expanded(
+                          child: _mosaicCell(
+                            context,
+                            row * 2 + 1,
+                            extra,
+                            visible,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _mosaicCell(
+    BuildContext context,
+    int index,
+    int extra,
+    int visible,
+  ) {
+    final isMore = index == visible - 1 && extra > 0;
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        _Tile(url: urls[index], onTap: () => _open(context, index)),
+        if (isMore)
+          ColoredBox(
+            color: const Color(0x66000000),
+            child: Center(
+              child: Text(
+                '+$extra',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 28,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ),
-          ],
-        ],
-      ),
+          ),
+      ],
     );
   }
 
@@ -42,11 +104,11 @@ class DiaryImageGrid extends StatelessWidget {
 }
 
 class _Tile extends StatelessWidget {
-  const _Tile({required this.url, required this.onTap, this.aspectRatio});
+  const _Tile({required this.url, required this.onTap, this.height});
 
   final String url;
   final VoidCallback onTap;
-  final double? aspectRatio;
+  final double? height;
 
   @override
   Widget build(BuildContext context) {
@@ -61,15 +123,15 @@ class _Tile extends StatelessWidget {
       ),
     );
 
-    return Material(
+    final child = Material(
       color: const Color(0xFFE0E0E0),
-      child: InkWell(
-        onTap: onTap,
-        child: aspectRatio == null
-            ? image
-            : AspectRatio(aspectRatio: aspectRatio!, child: image),
-      ),
+      child: InkWell(onTap: onTap, child: image),
     );
+
+    if (height != null) {
+      return SizedBox(height: height, width: double.infinity, child: child);
+    }
+    return child;
   }
 }
 

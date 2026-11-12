@@ -51,6 +51,7 @@ class DiaryPost {
     int? likeCount,
     int? commentCount,
     bool? likedByMe,
+    List<DiaryComment>? previewComments,
   }) {
     return DiaryPost(
       id: id,
@@ -62,7 +63,7 @@ class DiaryPost {
       commentCount: commentCount ?? this.commentCount,
       likedByMe: likedByMe ?? this.likedByMe,
       topLikerName: topLikerName,
-      previewComments: previewComments,
+      previewComments: previewComments ?? this.previewComments,
     );
   }
 }

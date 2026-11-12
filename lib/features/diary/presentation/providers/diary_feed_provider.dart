@@ -1,94 +1,151 @@
 import 'package:chat_app/features/diary/domain/entities/diary_post.dart';
-import 'package:flutter/foundation.dart';
+import 'package:chat_app/features/diary/presentation/mappers/diary_post_mapper.dart';
+import 'package:chat_app/features/news/data/providers/news_repository_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-final diaryFeedProvider = ChangeNotifierProvider<DiaryFeedController>((ref) {
-  return DiaryFeedController();
-});
+class DiaryFeedState {
+  const DiaryFeedState({
+    required this.posts,
+    this.nextCursor,
+    this.loadingMore = false,
+  });
 
-class DiaryFeedController extends ChangeNotifier {
-  DiaryFeedController({DateTime? now, List<DiaryPost>? seed})
-    : _posts = List.of(seed ?? mockDiaryPosts(now ?? DateTime.now()));
+  final List<DiaryPost> posts;
+  final String? nextCursor;
+  final bool loadingMore;
 
-  List<DiaryPost> _posts;
-  List<DiaryPost> get posts => List.unmodifiable(_posts);
-
-  void toggleLike(String postId) {
-    final index = _posts.indexWhere((post) => post.id == postId);
-    if (index < 0) return;
-    final post = _posts[index];
-    final liked = !post.likedByMe;
-    _posts = List.of(_posts);
-    _posts[index] = post.copyWith(
-      likedByMe: liked,
-      likeCount: post.likeCount + (liked ? 1 : -1),
+  DiaryFeedState copyWith({
+    List<DiaryPost>? posts,
+    String? nextCursor,
+    bool? loadingMore,
+    bool clearCursor = false,
+  }) {
+    return DiaryFeedState(
+      posts: posts ?? this.posts,
+      nextCursor: clearCursor ? null : (nextCursor ?? this.nextCursor),
+      loadingMore: loadingMore ?? this.loadingMore,
     );
-    notifyListeners();
   }
 }
 
-List<DiaryPost> mockDiaryPosts(DateTime now) {
-  const phuc = DiaryAuthor(
-    id: 'phuc',
-    name: 'Lê Hoàng Phúc',
-    avatarUrl: 'https://i.pravatar.cc/150?u=le-hoang-phuc',
-  );
-  const thao = DiaryAuthor(
-    id: 'thao',
-    name: 'Phương Thảo',
-    avatarUrl: 'https://i.pravatar.cc/150?u=phuong-thao',
-  );
-  const huy = DiaryAuthor(
-    id: 'huy',
-    name: 'Đặng Quang Huy',
-    avatarUrl: 'https://i.pravatar.cc/150?u=dang-quang-huy',
-  );
-  const trang = DiaryAuthor(
-    id: 'trang',
-    name: 'Trần Thu Trang',
-    avatarUrl: 'https://i.pravatar.cc/150?u=tran-thu-trang',
-  );
+final diaryFeedProvider =
+    AsyncNotifierProvider<DiaryFeedNotifier, DiaryFeedState>(
+      DiaryFeedNotifier.new,
+    );
 
-  return [
-    DiaryPost(
-      id: 'p1',
-      author: phuc,
-      caption:
-          'Cuối tuần hoàn thành xong bản demo ứng dụng chat thế hệ mới. Mời mọi người trải nghiệm thử và cho mình góp ý nhé!',
-      createdAt: now.subtract(const Duration(hours: 2)),
-      imageUrls: const [
-        'https://picsum.photos/seed/diary-chat-left/720/1280',
-        'https://picsum.photos/seed/diary-chat-right/720/1280',
-      ],
-      likeCount: 44,
-      commentCount: 18,
-      topLikerName: 'Lê Nam',
-      previewComments: const [
-        DiaryComment(
-          id: 'c1',
-          author: huy,
-          text:
-              'Giao diện nhìn mượt quá anh Phúc ơi! Màu xanh sáng rõ nét và icon rất hiện đại.',
+class DiaryFeedNotifier extends AsyncNotifier<DiaryFeedState> {
+  static const _pageSize = 20;
+
+  @override
+  Future<DiaryFeedState> build() async {
+    final page = await ref
+        .read(newsRepositoryProvider)
+        .fetchPublishedPosts(limit: _pageSize);
+    return DiaryFeedState(
+      posts: page.items.map((c) => c.toDiaryPost()).toList(),
+      nextCursor: page.nextCursor,
+    );
+  }
+
+  Future<void> refresh() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async {
+      final page = await ref
+          .read(newsRepositoryProvider)
+          .fetchPublishedPosts(limit: _pageSize);
+      return DiaryFeedState(
+        posts: page.items.map((c) => c.toDiaryPost()).toList(),
+        nextCursor: page.nextCursor,
+      );
+    });
+  }
+
+  Future<void> loadMore() async {
+    final current = state.valueOrNull;
+    final cursor = current?.nextCursor;
+    if (current == null ||
+        cursor == null ||
+        cursor.isEmpty ||
+        current.loadingMore) {
+      return;
+    }
+    state = AsyncData(current.copyWith(loadingMore: true));
+    try {
+      final page = await ref
+          .read(newsRepositoryProvider)
+          .fetchPublishedPosts(limit: _pageSize, cursor: cursor);
+      final merged = [
+        ...current.posts,
+        ...page.items.map((c) => c.toDiaryPost()),
+      ];
+      state = AsyncData(
+        DiaryFeedState(
+          posts: merged,
+          nextCursor: page.nextCursor,
+          loadingMore: false,
         ),
-        DiaryComment(
-          id: 'c2',
-          author: trang,
-          text: 'Cho mình xin link test bản Beta với nhé bạn!',
-        ),
-      ],
-    ),
-    DiaryPost(
-      id: 'p2',
-      author: thao,
-      caption:
-          'Chào đón một ngày mới tràn đầy năng lượng tại văn phòng mới 🌿✨',
-      createdAt: now.subtract(const Duration(hours: 5)),
-      imageUrls: const [
-        'https://picsum.photos/seed/diary-office/1600/1000',
-      ],
-      likeCount: 81,
-      commentCount: 12,
-      topLikerName: 'Nguyễn An',
-    ),
-  ];
+      );
+    } catch (_) {
+      state = AsyncData(current.copyWith(loadingMore: false));
+    }
+  }
+
+  Future<void> toggleLike(String postId) async {
+    final current = state.valueOrNull;
+    if (current == null) return;
+    DiaryPost? post;
+    for (final p in current.posts) {
+      if (p.id == postId) {
+        post = p;
+        break;
+      }
+    }
+    if (post == null) return;
+
+    final nextLike = !post.likedByMe;
+    try {
+      final snapshot = await ref
+          .read(newsRepositoryProvider)
+          .setLike(postId, like: nextLike);
+      final posts = current.posts.map((p) {
+        if (p.id != postId) return p;
+        return p.copyWith(
+          likeCount: snapshot.total,
+          likedByMe: snapshot.likedByMe,
+        );
+      }).toList();
+      state = AsyncData(current.copyWith(posts: posts));
+    } catch (_) {}
+  }
+
+  Future<void> addComment(String postId, String text) async {
+    final current = state.valueOrNull;
+    if (current == null) return;
+
+    try {
+      final created = await ref
+          .read(newsRepositoryProvider)
+          .createComment(postId, text);
+      final author = created.author;
+      final diaryComment = DiaryComment(
+        id: created.id,
+        author: author != null
+            ? DiaryAuthor(
+                id: author.id,
+                name: author.name,
+                avatarUrl: author.avatarUrl,
+              )
+            : const DiaryAuthor(id: 'me', name: 'Bạn'),
+        text: created.body,
+      );
+      final posts = current.posts.map((p) {
+        if (p.id != postId) return p;
+        return p.copyWith(
+          commentCount: p.commentCount + 1,
+          previewComments: [...p.previewComments, diaryComment],
+        );
+      }).toList();
+      state = AsyncData(current.copyWith(posts: posts));
+    } catch (_) {}
+  }
 }

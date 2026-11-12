@@ -10,6 +10,7 @@ class DiaryTopBar extends StatelessWidget {
     required this.onAvatarTap,
     required this.onNotificationTap,
     required this.onGalleryTap,
+    this.unreadCount = 0,
   });
 
   final TextEditingController searchController;
@@ -18,6 +19,7 @@ class DiaryTopBar extends StatelessWidget {
   final VoidCallback onAvatarTap;
   final VoidCallback onNotificationTap;
   final VoidCallback onGalleryTap;
+  final int unreadCount;
 
   @override
   Widget build(BuildContext context) {
@@ -83,7 +85,14 @@ class DiaryTopBar extends StatelessWidget {
             IconButton(
               tooltip: 'Thông báo',
               onPressed: onNotificationTap,
-              icon: Icon(Icons.notifications_outlined, color: primary),
+              icon: Badge(
+                isLabelVisible: unreadCount > 0,
+                label: Text(
+                  unreadCount > 99 ? '99+' : '$unreadCount',
+                  style: const TextStyle(fontSize: 10),
+                ),
+                child: Icon(Icons.notifications_outlined, color: primary),
+              ),
             ),
             DiaryAvatar(
               name: userName,

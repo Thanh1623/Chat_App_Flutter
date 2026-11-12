@@ -4,6 +4,10 @@ abstract final class AppRoutes {
   static const work = '/work';
   static const contacts = '/contacts';
   static const diary = '/diary';
+  static const diaryCompose = '/diary/compose';
+  static const diaryPost = '/diary/post/:postId';
+
+  static String diaryPostPath(String postId) => '/diary/post/$postId';
   static const gallery = '/gallery';
   static const profile = '/me';
   static const editProfile = '/me/edit';

@@ -15,6 +15,7 @@ class DiaryPostCard extends StatefulWidget {
     required this.onLike,
     required this.onShare,
     required this.onSubmitComment,
+    this.onOpenDetail,
   });
 
   final DiaryPost post;
@@ -23,6 +24,7 @@ class DiaryPostCard extends StatefulWidget {
   final VoidCallback onLike;
   final VoidCallback onShare;
   final ValueChanged<String> onSubmitComment;
+  final VoidCallback? onOpenDetail;
 
   @override
   State<DiaryPostCard> createState() => _DiaryPostCardState();
@@ -35,7 +37,7 @@ class _DiaryPostCardState extends State<DiaryPostCard> {
   Widget build(BuildContext context) {
     final muted = Theme.of(context).colorScheme.onSurfaceVariant;
 
-    return ColoredBox(
+    final child = ColoredBox(
       color: Colors.white,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -79,12 +81,17 @@ class _DiaryPostCardState extends State<DiaryPostCard> {
               ],
             ),
           ),
-          if (widget.post.caption.isNotEmpty)
+          if (widget.post.caption.trim().isNotEmpty)
             Padding(
-              padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+              padding: EdgeInsets.fromLTRB(
+                12,
+                0,
+                12,
+                widget.post.imageUrls.isEmpty ? 10 : 4,
+              ),
               child: Text(
-                widget.post.caption,
-                style: const TextStyle(fontSize: 15, height: 1.4),
+                widget.post.caption.trim(),
+                style: const TextStyle(fontSize: 15, height: 1.35),
               ),
             ),
           DiaryImageGrid(urls: widget.post.imageUrls),
@@ -102,6 +109,15 @@ class _DiaryPostCardState extends State<DiaryPostCard> {
             onSubmit: widget.onSubmitComment,
           ),
         ],
+      ),
+    );
+
+    if (widget.onOpenDetail == null) return child;
+    return Material(
+      color: Colors.white,
+      child: InkWell(
+        onTap: widget.onOpenDetail,
+        child: child,
       ),
     );
   }

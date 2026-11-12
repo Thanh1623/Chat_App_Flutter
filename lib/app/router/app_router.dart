@@ -8,7 +8,9 @@ import 'package:chat_app/features/contacts/presentation/contacts_page.dart';
 import 'package:chat_app/features/conversations/domain/entities/conversation.dart';
 import 'package:chat_app/features/conversations/presentation/conversations_page.dart';
 import 'package:chat_app/features/conversations/presentation/create_group_page.dart';
+import 'package:chat_app/features/diary/presentation/diary_compose_page.dart';
 import 'package:chat_app/features/diary/presentation/diary_page.dart';
+import 'package:chat_app/features/diary/presentation/diary_post_detail_page.dart';
 import 'package:chat_app/features/gallery/presentation/gallery_page.dart';
 import 'package:chat_app/features/profile/presentation/edit_profile_page.dart';
 import 'package:chat_app/features/profile/presentation/employee_profile_edit_page.dart';
@@ -118,6 +120,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: _rootNavigatorKey,
         path: AppRoutes.gallery,
         builder: (context, state) => const GalleryPage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: AppRoutes.diaryCompose,
+        builder: (context, state) => const DiaryComposePage(),
+      ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: AppRoutes.diaryPost,
+        builder: (context, state) {
+          final postId = state.pathParameters['postId']!;
+          return DiaryPostDetailPage(postId: postId);
+        },
       ),
       GoRoute(
         parentNavigatorKey: _rootNavigatorKey,
