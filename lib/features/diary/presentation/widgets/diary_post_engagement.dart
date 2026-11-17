@@ -1,8 +1,14 @@
+import 'package:chat_app/features/auth/presentation/providers/auth_controller.dart';
 import 'package:chat_app/features/diary/domain/entities/diary_post.dart';
+import 'package:chat_app/features/diary/presentation/utils/diary_like_label.dart';
+import 'package:chat_app/features/diary/presentation/widgets/diary_reaction_users_sheet.dart';
 import 'package:chat_app/features/diary/presentation/widgets/diary_tokens.dart';
+import 'package:chat_app/features/news/data/providers/news_reaction_users_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class DiaryPostEngagement extends StatelessWidget {
+// Widget hiển thị số lượng like và bình luận
+class DiaryPostEngagement extends ConsumerWidget {
   const DiaryPostEngagement({
     super.key,
     required this.post,
@@ -15,9 +21,50 @@ class DiaryPostEngagement extends StatelessWidget {
   final VoidCallback onComment;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final muted = Theme.of(context).colorScheme.onSurfaceVariant;
+    final myId = ref.watch(authControllerProvider).user?.id;
+    // Xem danh sách người đã thích
+    final usersAsync = post.likeCount > 0
+        ? ref.watch(newsPostReactionUsersProvider(post.id))
+        : null;
+    // Tạo label cho số lượng like và người like đầu tiên
+    final summaryLabel = usersAsync == null
+        ? diaryLikeSummaryLabel(
+            likeCount: post.likeCount,
+            likedByMe: post.likedByMe,
+          )
+        : usersAsync.when(
+            data: (items) => diaryLikeSummaryLabel(
+              likeCount: post.likeCount,
+              likedByMe: post.likedByMe,
+              topName: primaryLikerName(items, myUserId: myId),
+            ),
+            loading: () => diaryLikeSummaryLabel(
+              likeCount: post.likeCount,
+              likedByMe: post.likedByMe,
+            ),
+            error: (_, _) => diaryLikeSummaryLabel(
+              likeCount: post.likeCount,
+              likedByMe: post.likedByMe,
+            ),
+          );
 
+    // Mở sheet để xem danh sách người đã thích
+    Future<void> openLikers() async {
+      if (post.likeCount <= 0) return;
+      final items = await ref.read(
+        newsPostReactionUsersProvider(post.id).future,
+      );
+      if (!context.mounted) return;
+      await showDiaryReactionUsersSheet(
+        context: context,
+        items: items,
+        myUserId: myId,
+      );
+    }
+
+    // Xây dựng widget hiển thị số lượng like và bình luận
     return Padding(
       padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
       child: Column(
@@ -34,11 +81,15 @@ class DiaryPostEngagement extends StatelessWidget {
                     ),
                     const SizedBox(width: 6),
                     Expanded(
-                      child: Text(
-                        _likeLabel(post),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(color: muted, fontSize: 13),
+                      child: InkWell(
+                        onTap: openLikers,
+                        borderRadius: BorderRadius.circular(4),
+                        child: Text(
+                          summaryLabel,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(color: muted, fontSize: 13),
+                        ),
                       ),
                     ),
                   ] else
@@ -74,21 +125,7 @@ class DiaryPostEngagement extends StatelessWidget {
   }
 }
 
-String _likeLabel(DiaryPost post) {
-  if (post.likedByMe && post.likeCount == 1) return 'Bạn';
-  if (post.likedByMe) {
-    final others = post.likeCount - 1;
-    if (post.topLikerName != null && others == 1) {
-      return 'Bạn và ${post.topLikerName}';
-    }
-    return 'Bạn và $others người khác';
-  }
-  final name = post.topLikerName;
-  if (name == null || name.isEmpty) return '${post.likeCount}';
-  if (post.likeCount == 1) return name;
-  return '$name và ${post.likeCount - 1} người khác';
-}
-
+// Widget hiển thị dot cho loại like
 class _ReactionDot extends StatelessWidget {
   const _ReactionDot({required this.icon, required this.color});
 
@@ -106,6 +143,7 @@ class _ReactionDot extends StatelessWidget {
   }
 }
 
+// Widget hiển thị action cho like và bình luận
 class _Action extends StatelessWidget {
   const _Action({
     required this.icon,

@@ -11,6 +11,8 @@ import 'package:chat_app/features/news/domain/entities/news_notification.dart';
 import 'package:chat_app/features/news/domain/entities/news_post.dart';
 import 'package:chat_app/features/news/domain/entities/news_post_input.dart';
 import 'package:chat_app/features/news/domain/entities/news_post_page.dart';
+import 'package:chat_app/features/news/domain/entities/news_reaction_user.dart';
+import 'package:chat_app/features/news/domain/models/news_reaction_user_model.dart';
 import 'package:chat_app/features/news/domain/repositories/news_repository.dart';
 import 'package:dio/dio.dart';
 
@@ -95,6 +97,13 @@ class NewsRemoteDataSource {
     final total = (data['total'] as num?)?.toInt() ?? 0;
     final liked = data['mine'] != null;
     return NewsReactionSnapshot(total: total, likedByMe: liked);
+  }
+
+  Future<List<NewsReactionUser>> fetchReactionUsers(String postId) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      ApiEndpoints.newsPostReactions(postId),
+    );
+    return parseNewsReactionUsers(response.data);
   }
 
   Future<NewsCommentPage> fetchComments(

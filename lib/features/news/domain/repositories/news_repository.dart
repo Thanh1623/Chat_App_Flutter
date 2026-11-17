@@ -5,6 +5,7 @@ import 'package:chat_app/features/news/domain/entities/news_notification.dart';
 import 'package:chat_app/features/news/domain/entities/news_post.dart';
 import 'package:chat_app/features/news/domain/entities/news_post_input.dart';
 import 'package:chat_app/features/news/domain/entities/news_post_page.dart';
+import 'package:chat_app/features/news/domain/entities/news_reaction_user.dart';
 
 class NewsReactionSnapshot {
   const NewsReactionSnapshot({required this.total, required this.likedByMe});
@@ -32,6 +33,8 @@ abstract interface class NewsRepository {
   Future<void> markNotificationsRead();
 
   Future<NewsReactionSnapshot> setLike(String postId, {required bool like});
+
+  Future<List<NewsReactionUser>> fetchReactionUsers(String postId);
 
   Future<NewsCommentPage> fetchComments(
     String postId, {

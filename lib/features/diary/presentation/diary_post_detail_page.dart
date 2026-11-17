@@ -10,6 +10,7 @@ import 'package:chat_app/features/diary/presentation/widgets/diary_compose_sheet
 import 'package:chat_app/features/diary/presentation/widgets/diary_image_grid.dart';
 import 'package:chat_app/features/diary/presentation/widgets/diary_post_engagement.dart';
 import 'package:chat_app/features/diary/presentation/widgets/diary_post_menu.dart';
+import 'package:chat_app/features/news/data/providers/news_reaction_users_provider.dart';
 import 'package:chat_app/features/news/data/providers/news_repository_provider.dart';
 import 'package:chat_app/features/news/domain/entities/news_block.dart';
 import 'package:chat_app/features/news/domain/entities/news_feed_item.dart';
@@ -94,9 +95,9 @@ class _DiaryPostDetailPageState extends ConsumerState<DiaryPostDetailPage> {
                           Text(
                             formatDiaryTime(post.createdAt),
                             style: TextStyle(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurfaceVariant,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
                               fontSize: 12.5,
                             ),
                           ),
@@ -200,6 +201,7 @@ class _DiaryPostDetailPageState extends ConsumerState<DiaryPostDetailPage> {
         );
       });
       ref.invalidate(diaryFeedProvider);
+      ref.invalidate(newsPostReactionUsersProvider(post.id));
     } catch (_) {}
   }
 

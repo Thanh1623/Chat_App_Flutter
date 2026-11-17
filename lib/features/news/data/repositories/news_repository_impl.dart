@@ -7,6 +7,7 @@ import 'package:chat_app/features/news/domain/entities/news_notification.dart';
 import 'package:chat_app/features/news/domain/entities/news_post.dart';
 import 'package:chat_app/features/news/domain/entities/news_post_input.dart';
 import 'package:chat_app/features/news/domain/entities/news_post_page.dart';
+import 'package:chat_app/features/news/domain/entities/news_reaction_user.dart';
 import 'package:chat_app/features/news/domain/repositories/news_repository.dart';
 
 class NewsRepositoryImpl implements NewsRepository {
@@ -165,6 +166,15 @@ class NewsRepositoryImpl implements NewsRepository {
         bytes: bytes,
         filename: filename,
       );
+    } catch (e) {
+      throw mapException(e);
+    }
+  }
+
+  @override
+  Future<List<NewsReactionUser>> fetchReactionUsers(String postId) async {
+    try {
+      return await _remote.fetchReactionUsers(postId);
     } catch (e) {
       throw mapException(e);
     }
