@@ -2,10 +2,12 @@ import 'package:chat_app/core/network/api_endpoints.dart';
 import 'package:chat_app/core/network/image_multipart.dart';
 import 'package:chat_app/features/news/data/models/news_comment_model.dart';
 import 'package:chat_app/features/news/data/models/news_models.dart';
+import 'package:chat_app/features/news/data/models/news_notification_model.dart';
 import 'package:chat_app/features/news/data/models/news_post_model.dart';
 import 'package:chat_app/features/news/domain/entities/news_comment.dart';
 import 'package:chat_app/features/news/domain/entities/news_feed_item.dart';
 import 'package:chat_app/features/news/domain/entities/news_image.dart';
+import 'package:chat_app/features/news/domain/entities/news_notification.dart';
 import 'package:chat_app/features/news/domain/entities/news_post.dart';
 import 'package:chat_app/features/news/domain/entities/news_post_input.dart';
 import 'package:chat_app/features/news/domain/entities/news_post_page.dart';
@@ -47,6 +49,31 @@ class NewsRemoteDataSource {
 
   Future<void> markNewsSeen() async {
     await _dio.post<void>(ApiEndpoints.newsSeen);
+  }
+
+  Future<NewsNotificationPage> fetchNotifications({
+    int limit = 30,
+    String? cursor,
+  }) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      ApiEndpoints.newsNotifications,
+      queryParameters: {
+        'limit': limit,
+        if (cursor != null && cursor.isNotEmpty) 'cursor': cursor,
+      },
+    );
+    return NewsNotificationPageModel.fromJson(response.data ?? {}).toEntity();
+  }
+
+  Future<int> fetchNotificationUnreadCount() async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      ApiEndpoints.newsNotificationsUnread,
+    );
+    return (response.data?['count'] as num?)?.toInt() ?? 0;
+  }
+
+  Future<void> markNotificationsRead() async {
+    await _dio.post<void>(ApiEndpoints.newsNotificationsRead);
   }
 
   Future<NewsReactionSnapshot> setLike(

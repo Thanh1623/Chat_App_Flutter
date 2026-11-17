@@ -6,6 +6,7 @@ abstract final class AppRoutes {
   static const diary = '/diary';
   static const diaryCompose = '/diary/compose';
   static const diaryPost = '/diary/post/:postId';
+  static const diaryNotifications = '/diary/notifications';
 
   static String diaryPostPath(String postId) => '/diary/post/$postId';
   static const gallery = '/gallery';

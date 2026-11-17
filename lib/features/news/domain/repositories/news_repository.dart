@@ -1,6 +1,7 @@
 import 'package:chat_app/features/news/domain/entities/news_comment.dart';
 import 'package:chat_app/features/news/domain/entities/news_feed_item.dart';
 import 'package:chat_app/features/news/domain/entities/news_image.dart';
+import 'package:chat_app/features/news/domain/entities/news_notification.dart';
 import 'package:chat_app/features/news/domain/entities/news_post.dart';
 import 'package:chat_app/features/news/domain/entities/news_post_input.dart';
 import 'package:chat_app/features/news/domain/entities/news_post_page.dart';
@@ -20,6 +21,15 @@ abstract interface class NewsRepository {
   Future<int> fetchUnreadCount();
 
   Future<void> markNewsSeen();
+
+  Future<NewsNotificationPage> fetchNotifications({
+    int limit = 30,
+    String? cursor,
+  });
+
+  Future<int> fetchNotificationUnreadCount();
+
+  Future<void> markNotificationsRead();
 
   Future<NewsReactionSnapshot> setLike(String postId, {required bool like});
 

@@ -71,6 +71,9 @@ abstract final class ApiEndpoints {
 
   static const newsUnread = '/news/unread';
   static const newsSeen = '/news/seen';
+  static const newsNotifications = '/news/notifications';
+  static const newsNotificationsUnread = '/news/notifications/unread';
+  static const newsNotificationsRead = '/news/notifications/read';
   static String newsPostReaction(String postId) =>
       '/news/posts/$postId/reaction';
   static String newsPostComments(String postId) =>

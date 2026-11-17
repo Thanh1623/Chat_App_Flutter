@@ -3,6 +3,7 @@ import 'package:chat_app/features/news/data/datasources/news_remote_data_source.
 import 'package:chat_app/features/news/domain/entities/news_comment.dart';
 import 'package:chat_app/features/news/domain/entities/news_feed_item.dart';
 import 'package:chat_app/features/news/domain/entities/news_image.dart';
+import 'package:chat_app/features/news/domain/entities/news_notification.dart';
 import 'package:chat_app/features/news/domain/entities/news_post.dart';
 import 'package:chat_app/features/news/domain/entities/news_post_input.dart';
 import 'package:chat_app/features/news/domain/entities/news_post_page.dart';
@@ -47,6 +48,36 @@ class NewsRepositoryImpl implements NewsRepository {
   Future<void> markNewsSeen() async {
     try {
       await _remote.markNewsSeen();
+    } catch (e) {
+      throw mapException(e);
+    }
+  }
+
+  @override
+  Future<NewsNotificationPage> fetchNotifications({
+    int limit = 30,
+    String? cursor,
+  }) async {
+    try {
+      return await _remote.fetchNotifications(limit: limit, cursor: cursor);
+    } catch (e) {
+      throw mapException(e);
+    }
+  }
+
+  @override
+  Future<int> fetchNotificationUnreadCount() async {
+    try {
+      return await _remote.fetchNotificationUnreadCount();
+    } catch (e) {
+      throw mapException(e);
+    }
+  }
+
+  @override
+  Future<void> markNotificationsRead() async {
+    try {
+      await _remote.markNotificationsRead();
     } catch (e) {
       throw mapException(e);
     }

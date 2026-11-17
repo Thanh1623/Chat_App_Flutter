@@ -19,6 +19,7 @@ class ChatSocketClient {
   final _roomUpdates = StreamController<Map<String, dynamic>>.broadcast();
   final _tasks = StreamController<Map<String, dynamic>>.broadcast();
   final _newsPublished = StreamController<Map<String, dynamic>>.broadcast();
+  final _newsNotifications = StreamController<Map<String, dynamic>>.broadcast();
 
   final _presence = StreamController<Set<String>>.broadcast();
   Set<String> _onlineIds = const {};
@@ -32,6 +33,8 @@ class ChatSocketClient {
   Stream<Map<String, dynamic>> get roomUpdates => _roomUpdates.stream;
   Stream<Map<String, dynamic>> get tasks => _tasks.stream;
   Stream<Map<String, dynamic>> get newsPublished => _newsPublished.stream;
+  Stream<Map<String, dynamic>> get newsNotifications =>
+      _newsNotifications.stream;
 
   String? _token;
 
@@ -141,6 +144,11 @@ class ChatSocketClient {
         final json = _asJsonMap(data);
         if (json == null) return;
         _newsPublished.add(json);
+      })
+      ..on('news.notification', (data) {
+        final json = _asJsonMap(data);
+        if (json == null) return;
+        _newsNotifications.add(json);
       })
       ..connect();
   }

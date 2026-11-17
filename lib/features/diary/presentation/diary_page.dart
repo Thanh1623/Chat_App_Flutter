@@ -13,6 +13,7 @@ import 'package:chat_app/features/diary/presentation/widgets/diary_post_card.dar
 import 'package:chat_app/features/diary/presentation/widgets/diary_post_menu.dart';
 import 'package:chat_app/features/diary/presentation/widgets/diary_tokens.dart';
 import 'package:chat_app/features/diary/presentation/widgets/diary_top_bar.dart';
+import 'package:chat_app/features/news/data/providers/news_repository_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -66,7 +67,7 @@ class _DiaryPageState extends ConsumerState<DiaryPage> {
   void _markNewsSeenOnce() {
     if (_markedNewsSeen) return;
     _markedNewsSeen = true;
-    Future.microtask(() => ref.read(diaryUnreadProvider.notifier).markSeen());
+    Future.microtask(() => ref.read(newsRepositoryProvider).markNewsSeen());
   }
 
   @override
@@ -90,10 +91,8 @@ class _DiaryPageState extends ConsumerState<DiaryPage> {
             unreadCount: unread,
             onAvatarTap: () => context.go(AppRoutes.profile),
             onGalleryTap: () => context.push(AppRoutes.gallery),
-            onNotificationTap: () {
-              ref.read(diaryUnreadProvider.notifier).markSeen();
-              ref.read(diaryFeedProvider.notifier).refresh();
-            },
+            onNotificationTap: () =>
+                context.push(AppRoutes.diaryNotifications),
           ),
           Expanded(child: _buildBody(context, feed, name, avatar, user?.id)),
         ],
