@@ -1,5 +1,6 @@
 import 'package:chat_app/features/diary/domain/entities/diary_post.dart';
 import 'package:chat_app/features/diary/presentation/mappers/diary_post_mapper.dart';
+import 'package:chat_app/features/news/data/providers/news_reaction_users_provider.dart';
 import 'package:chat_app/features/news/data/providers/news_repository_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -115,37 +116,7 @@ class DiaryFeedNotifier extends AsyncNotifier<DiaryFeedState> {
         );
       }).toList();
       state = AsyncData(current.copyWith(posts: posts));
-    } catch (_) {}
-  }
-
-  Future<void> addComment(String postId, String text) async {
-    final current = state.valueOrNull;
-    if (current == null) return;
-
-    try {
-      final created = await ref
-          .read(newsRepositoryProvider)
-          .createComment(postId, text);
-      final author = created.author;
-      final diaryComment = DiaryComment(
-        id: created.id,
-        author: author != null
-            ? DiaryAuthor(
-                id: author.id,
-                name: author.name,
-                avatarUrl: author.avatarUrl,
-              )
-            : const DiaryAuthor(id: 'me', name: 'Bạn'),
-        text: created.body,
-      );
-      final posts = current.posts.map((p) {
-        if (p.id != postId) return p;
-        return p.copyWith(
-          commentCount: p.commentCount + 1,
-          previewComments: [...p.previewComments, diaryComment],
-        );
-      }).toList();
-      state = AsyncData(current.copyWith(posts: posts));
+      ref.invalidate(newsPostReactionUsersProvider(postId));
     } catch (_) {}
   }
 }

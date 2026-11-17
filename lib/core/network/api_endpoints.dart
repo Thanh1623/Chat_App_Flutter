@@ -81,4 +81,6 @@ abstract final class ApiEndpoints {
 
   static String newsPostReactions(String postId) =>
       '/news/posts/$postId/reactions';
+
+  static String newsComment(String commentId) => '/news/comments/$commentId';
 }

@@ -105,22 +105,20 @@ class NewsFeedItemModel {
     : card = NewsCardModel.fromJson(json),
       post = NewsPostModel.fromJson(json),
       likedByMe = NewsCardModel.reactionLikedByMe(json['reactions']),
-      previewComments = _previewComments(json['comments']);
+      commentPreview = _commentPreview(json['comments']);
 
   final NewsCardModel card;
   final NewsPostModel post;
   final bool likedByMe;
-  final List<NewsComment> previewComments;
+  final NewsCommentPage commentPreview;
 
-  static List<NewsComment> _previewComments(dynamic raw) {
-    if (raw is! Map) return const [];
-    final items = raw['items'];
-    if (items is! List) return const [];
-    return items
-        .whereType<Map<String, dynamic>>()
-        .map(NewsCommentModel.fromJson)
-        .map((m) => m.toEntity())
-        .toList();
+  static NewsCommentPage _commentPreview(dynamic raw) {
+    if (raw is! Map) {
+      return const NewsCommentPage(items: []);
+    }
+    return NewsCommentPageModel.fromJson(
+      Map<String, dynamic>.from(raw),
+    ).toEntity();
   }
 
   NewsFeedItem toEntity() {
@@ -144,7 +142,8 @@ class NewsFeedItemModel {
       likeCount: card.likeCount,
       commentCount: card.commentCount,
       likedByMe: likedByMe,
-      previewComments: previewComments,
+      commentPreview: commentPreview,
+      previewComments: commentPreview.items,
     );
   }
 }

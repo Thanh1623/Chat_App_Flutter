@@ -1,3 +1,5 @@
+import 'package:chat_app/features/news/domain/entities/news_comment.dart';
+
 class DiaryAuthor {
   const DiaryAuthor({
     required this.id,
@@ -33,6 +35,7 @@ class DiaryPost {
     this.commentCount = 0,
     this.likedByMe = false,
     this.topLikerName,
+    this.commentPreview = const NewsCommentPage(items: []),
     this.previewComments = const [],
   });
 
@@ -45,12 +48,14 @@ class DiaryPost {
   final int commentCount;
   final bool likedByMe;
   final String? topLikerName;
+  final NewsCommentPage commentPreview;
   final List<DiaryComment> previewComments;
 
   DiaryPost copyWith({
     int? likeCount,
     int? commentCount,
     bool? likedByMe,
+    NewsCommentPage? commentPreview,
     List<DiaryComment>? previewComments,
   }) {
     return DiaryPost(
@@ -63,6 +68,7 @@ class DiaryPost {
       commentCount: commentCount ?? this.commentCount,
       likedByMe: likedByMe ?? this.likedByMe,
       topLikerName: topLikerName,
+      commentPreview: commentPreview ?? this.commentPreview,
       previewComments: previewComments ?? this.previewComments,
     );
   }

@@ -10,6 +10,7 @@ class NewsComment {
     this.createdAt,
     this.replyCount = 0,
     this.replies = const [],
+    this.editedAt,
   });
 
   final String id;
@@ -20,6 +21,7 @@ class NewsComment {
   final DateTime? createdAt;
   final int replyCount;
   final List<NewsComment> replies;
+  final DateTime? editedAt;
 }
 
 class NewsCommentPage {

@@ -17,6 +17,7 @@ class NewsFeedItem {
     this.author,
     this.source,
     this.likedByMe = false,
+    this.commentPreview = const NewsCommentPage(items: []),
     this.previewComments = const [],
   });
 
@@ -32,5 +33,8 @@ class NewsFeedItem {
   final int likeCount;
   final int commentCount;
   final bool likedByMe;
+  final NewsCommentPage commentPreview;
+
+  /// Deprecated for UI — use [commentPreview]. Kept for mapping/tests.
   final List<NewsComment> previewComments;
 }

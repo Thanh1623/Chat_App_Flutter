@@ -5,9 +5,10 @@ import 'package:chat_app/features/diary/presentation/diary_time.dart';
 import 'package:chat_app/features/diary/presentation/mappers/diary_post_mapper.dart';
 import 'package:chat_app/features/diary/presentation/providers/diary_feed_provider.dart';
 import 'package:chat_app/features/diary/presentation/widgets/diary_avatar.dart';
-import 'package:chat_app/features/diary/presentation/widgets/diary_comment_thread.dart';
+import 'package:chat_app/features/diary/presentation/widgets/diary_comment_composer.dart';
 import 'package:chat_app/features/diary/presentation/widgets/diary_compose_sheet.dart';
 import 'package:chat_app/features/diary/presentation/widgets/diary_image_grid.dart';
+import 'package:chat_app/features/diary/presentation/widgets/diary_news_comments.dart';
 import 'package:chat_app/features/diary/presentation/widgets/diary_post_engagement.dart';
 import 'package:chat_app/features/diary/presentation/widgets/diary_post_menu.dart';
 import 'package:chat_app/features/news/data/providers/news_reaction_users_provider.dart';
@@ -21,22 +22,20 @@ class DiaryPostDetailData {
   const DiaryPostDetailData({
     required this.item,
     required this.post,
-    required this.comments,
   });
 
   final NewsFeedItem item;
   final DiaryPost post;
-  final List<DiaryComment> comments;
 }
 
 final diaryPostDetailProvider = FutureProvider.autoDispose
     .family<DiaryPostDetailData, String>((ref, postId) async {
       final repo = ref.read(newsRepositoryProvider);
       final item = await repo.fetchPost(postId);
-      final page = await repo.fetchComments(postId, limit: 50);
-      final post = item.toDiaryPost();
-      final comments = page.items.map(newsCommentToDiary).toList();
-      return DiaryPostDetailData(item: item, post: post, comments: comments);
+      return DiaryPostDetailData(
+        item: item,
+        post: item.toDiaryPost(),
+      );
     });
 
 class DiaryPostDetailPage extends ConsumerStatefulWidget {
@@ -50,8 +49,8 @@ class DiaryPostDetailPage extends ConsumerStatefulWidget {
 }
 
 class _DiaryPostDetailPageState extends ConsumerState<DiaryPostDetailPage> {
+  final _composerKey = GlobalKey<DiaryCommentComposerState>();
   DiaryPost? _postOverride;
-  List<DiaryComment>? _commentsOverride;
 
   @override
   Widget build(BuildContext context) {
@@ -59,6 +58,7 @@ class _DiaryPostDetailPageState extends ConsumerState<DiaryPostDetailPage> {
     final user = ref.watch(authControllerProvider).user;
     final name = user?.displayName ?? 'Bạn';
     final avatar = user?.avatarUrl;
+    final userId = user?.id ?? '';
 
     return Scaffold(
       appBar: AppBar(title: const Text('Chi tiết bài viết')),
@@ -70,7 +70,6 @@ class _DiaryPostDetailPageState extends ConsumerState<DiaryPostDetailPage> {
         ),
         data: (data) {
           final post = _postOverride ?? data.post;
-          final comments = _commentsOverride ?? data.comments;
 
           return ListView(
             children: [
@@ -117,10 +116,7 @@ class _DiaryPostDetailPageState extends ConsumerState<DiaryPostDetailPage> {
                                 editPostId: widget.postId,
                               );
                               if (!mounted) return;
-                              setState(() {
-                                _postOverride = null;
-                                _commentsOverride = null;
-                              });
+                              setState(() => _postOverride = null);
                               ref.invalidate(
                                 diaryPostDetailProvider(widget.postId),
                               );
@@ -155,13 +151,21 @@ class _DiaryPostDetailPageState extends ConsumerState<DiaryPostDetailPage> {
               DiaryPostEngagement(
                 post: post,
                 onLike: () => _toggleLike(post),
-                onComment: () {},
+                onComment: () => _composerKey.currentState?.focusComposer(),
+                onViewComments: () => _composerKey.currentState?.focusComposer(),
               ),
-              DiaryCommentThread(
-                comments: comments,
-                currentUserName: name,
-                currentUserAvatarUrl: avatar,
-                onSubmit: (text) => _comment(text, post, comments),
+              DiaryNewsComments(
+                postId: widget.postId,
+                preview: data.item.commentPreview,
+                myUserId: userId,
+                myName: name,
+                myAvatarUrl: avatar,
+                composerKey: _composerKey,
+                layout: DiaryCommentsLayout.detail,
+                totalCommentCount: post.commentCount,
+                onFeedRefresh: () {
+                  ref.invalidate(diaryPostDetailProvider(widget.postId));
+                },
               ),
             ],
           );
@@ -202,25 +206,6 @@ class _DiaryPostDetailPageState extends ConsumerState<DiaryPostDetailPage> {
       });
       ref.invalidate(diaryFeedProvider);
       ref.invalidate(newsPostReactionUsersProvider(post.id));
-    } catch (_) {}
-  }
-
-  Future<void> _comment(
-    String text,
-    DiaryPost post,
-    List<DiaryComment> current,
-  ) async {
-    try {
-      final created = await ref
-          .read(newsRepositoryProvider)
-          .createComment(post.id, text);
-      final diaryComment = newsCommentToDiary(created);
-      if (!mounted) return;
-      setState(() {
-        _postOverride = post.copyWith(commentCount: post.commentCount + 1);
-        _commentsOverride = [...current, diaryComment];
-      });
-      ref.invalidate(diaryFeedProvider);
     } catch (_) {}
   }
 }

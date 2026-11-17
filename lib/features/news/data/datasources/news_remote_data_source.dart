@@ -121,12 +121,31 @@ class NewsRemoteDataSource {
     return NewsCommentPageModel.fromJson(response.data ?? {}).toEntity();
   }
 
-  Future<NewsComment> createComment(String postId, String body) async {
+  Future<NewsComment> createComment(
+    String postId,
+    String body, {
+    String? parentId,
+  }) async {
     final response = await _dio.post<Map<String, dynamic>>(
       ApiEndpoints.newsPostComments(postId),
+      data: {
+        'body': body,
+        if (parentId != null) 'parentId': parentId,
+      },
+    );
+    return NewsCommentModel.fromJson(response.data ?? {}).toEntity();
+  }
+
+  Future<NewsComment> updateComment(String commentId, String body) async {
+    final response = await _dio.patch<Map<String, dynamic>>(
+      ApiEndpoints.newsComment(commentId),
       data: {'body': body},
     );
     return NewsCommentModel.fromJson(response.data ?? {}).toEntity();
+  }
+
+  Future<void> deleteComment(String commentId) async {
+    await _dio.delete<void>(ApiEndpoints.newsComment(commentId));
   }
 
   Future<NewsPost> createDraft() async {

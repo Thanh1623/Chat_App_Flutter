@@ -110,9 +110,31 @@ class NewsRepositoryImpl implements NewsRepository {
   }
 
   @override
-  Future<NewsComment> createComment(String postId, String body) async {
+  Future<NewsComment> createComment(
+    String postId,
+    String body, {
+    String? parentId,
+  }) async {
     try {
-      return await _remote.createComment(postId, body);
+      return await _remote.createComment(postId, body, parentId: parentId);
+    } catch (e) {
+      throw mapException(e);
+    }
+  }
+
+  @override
+  Future<NewsComment> updateComment(String commentId, String body) async {
+    try {
+      return await _remote.updateComment(commentId, body);
+    } catch (e) {
+      throw mapException(e);
+    }
+  }
+
+  @override
+  Future<void> deleteComment(String commentId) async {
+    try {
+      await _remote.deleteComment(commentId);
     } catch (e) {
       throw mapException(e);
     }

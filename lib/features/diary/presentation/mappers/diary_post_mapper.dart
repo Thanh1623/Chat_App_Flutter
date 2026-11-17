@@ -22,6 +22,7 @@ extension NewsCardDiary on NewsCard {
       likeCount: likeCount,
       commentCount: commentCount,
       likedByMe: false,
+      commentPreview: const NewsCommentPage(items: []),
       previewComments: const [],
     );
   }
@@ -66,6 +67,7 @@ extension NewsFeedItemDiary on NewsFeedItem {
       likeCount: likeCount,
       commentCount: commentCount,
       likedByMe: likedByMe,
+      commentPreview: commentPreview,
       previewComments: previewComments.map(_toDiaryComment).toList(),
     );
   }

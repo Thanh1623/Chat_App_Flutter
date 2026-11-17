@@ -164,6 +164,7 @@ class _DiaryPageState extends ConsumerState<DiaryPage> {
                   final post = posts[index];
                   return DiaryPostCard(
                     post: post,
+                    myUserId: userId ?? '',
                     currentUserName: name,
                     currentUserAvatarUrl: avatar,
                     onOpenDetail: () =>
@@ -185,9 +186,6 @@ class _DiaryPageState extends ConsumerState<DiaryPage> {
                             );
                           }
                         : null,
-                    onSubmitComment: (text) => ref
-                        .read(diaryFeedProvider.notifier)
-                        .addComment(post.id, text),
                   );
                 },
               ),

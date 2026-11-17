@@ -42,7 +42,15 @@ abstract interface class NewsRepository {
     int limit = 20,
   });
 
-  Future<NewsComment> createComment(String postId, String body);
+  Future<NewsComment> createComment(
+    String postId,
+    String body, {
+    String? parentId,
+  });
+
+  Future<NewsComment> updateComment(String commentId, String body);
+
+  Future<void> deleteComment(String commentId);
 
   Future<NewsPost> createDraft();
 

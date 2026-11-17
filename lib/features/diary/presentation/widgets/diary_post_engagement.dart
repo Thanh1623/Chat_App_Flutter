@@ -14,11 +14,13 @@ class DiaryPostEngagement extends ConsumerWidget {
     required this.post,
     required this.onLike,
     required this.onComment,
+    this.onViewComments,
   });
 
   final DiaryPost post;
   final VoidCallback onLike;
   final VoidCallback onComment;
+  final VoidCallback? onViewComments;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -95,9 +97,13 @@ class DiaryPostEngagement extends ConsumerWidget {
                   ] else
                     const Spacer(),
                   if (post.commentCount > 0)
-                    Text(
-                      '${post.commentCount} bình luận',
-                      style: TextStyle(color: muted, fontSize: 13),
+                    InkWell(
+                      onTap: onViewComments ?? onComment,
+                      borderRadius: BorderRadius.circular(4),
+                      child: Text(
+                        '${post.commentCount} bình luận',
+                        style: TextStyle(color: muted, fontSize: 13),
+                      ),
                     ),
                 ],
               ),

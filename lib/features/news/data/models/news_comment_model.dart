@@ -10,6 +10,7 @@ class NewsCommentModel {
       body = json['body']?.toString() ?? '',
       author = NewsCardModel.parseAuthor(json['author']),
       createdAt = DateTime.tryParse(json['createdAt']?.toString() ?? ''),
+      editedAt = DateTime.tryParse(json['editedAt']?.toString() ?? ''),
       replyCount = (json['replyCount'] as num?)?.toInt() ?? 0,
       replies = (json['replies'] as List<dynamic>? ?? const [])
           .whereType<Map<String, dynamic>>()
@@ -23,6 +24,7 @@ class NewsCommentModel {
   final String body;
   final NewsAuthor? author;
   final DateTime? createdAt;
+  final DateTime? editedAt;
   final int replyCount;
   final List<NewsComment> replies;
 
@@ -33,6 +35,7 @@ class NewsCommentModel {
     body: body,
     author: author,
     createdAt: createdAt,
+    editedAt: editedAt,
     replyCount: replyCount,
     replies: replies,
   );
