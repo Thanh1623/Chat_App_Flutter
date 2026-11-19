@@ -86,10 +86,7 @@ class _DiaryPageState extends ConsumerState<DiaryPage> {
         children: [
           DiaryTopBar(
             searchController: _search,
-            userName: name,
-            userAvatarUrl: avatar,
             unreadCount: unread,
-            onAvatarTap: () => context.go(AppRoutes.profile),
             onGalleryTap: () => context.push(AppRoutes.gallery),
             onNotificationTap: () =>
                 context.push(AppRoutes.diaryNotifications),

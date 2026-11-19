@@ -1,22 +1,15 @@
-import 'package:chat_app/features/diary/presentation/widgets/diary_avatar.dart';
 import 'package:flutter/material.dart';
 
 class DiaryTopBar extends StatelessWidget {
   const DiaryTopBar({
     super.key,
     required this.searchController,
-    required this.userName,
-    this.userAvatarUrl,
-    required this.onAvatarTap,
     required this.onNotificationTap,
     required this.onGalleryTap,
     this.unreadCount = 0,
   });
 
   final TextEditingController searchController;
-  final String userName;
-  final String? userAvatarUrl;
-  final VoidCallback onAvatarTap;
   final VoidCallback onNotificationTap;
   final VoidCallback onGalleryTap;
   final int unreadCount;
@@ -94,13 +87,6 @@ class DiaryTopBar extends StatelessWidget {
                 child: Icon(Icons.notifications_outlined, color: primary),
               ),
             ),
-            DiaryAvatar(
-              name: userName,
-              url: userAvatarUrl,
-              radius: 16,
-              onTap: onAvatarTap,
-            ),
-            const SizedBox(width: 8),
           ],
         ),
       ),
