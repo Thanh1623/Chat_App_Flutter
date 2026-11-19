@@ -13,6 +13,7 @@ import 'package:chat_app/features/chat/presentation/providers/chat_controller.da
 import 'package:chat_app/features/chat/presentation/widgets/chat_message_avatar.dart';
 import 'package:chat_app/features/chat/presentation/widgets/group_members_sheet.dart';
 import 'package:chat_app/features/chat/presentation/widgets/group_settings_sheet.dart';
+import 'package:chat_app/features/chat/presentation/widgets/message_actions_sheet.dart';
 import 'package:chat_app/features/chat/presentation/widgets/pinned_messages_sheet.dart';
 import 'package:chat_app/features/chat/presentation/widgets/room_media_sheet.dart';
 import 'package:chat_app/features/chat/presentation/widgets/message_seen_sheet.dart';
@@ -237,12 +238,12 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     );
   }
 
-  void _togglePin(ChatMessage message) {
+  void _openMessageActions(ChatMessage message) {
     final chat =
         ref.read(chatControllerProvider(widget.conversationId).notifier);
     final myId = ref.read(sessionStorageProvider).user?.id;
     final mine = myId != null && message.userId == myId && !message.isAgent;
-    showPinMessageActions(
+    showMessageActions(
       context: context,
       message: message,
       myId: myId,
@@ -441,7 +442,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                   showSenderNames: widget.isGroup,
                   isGroup: widget.isGroup,
                   onOpenSenderProfile: _openUserProfile,
-                  onPinToggle: _togglePin,
+                  onPinToggle: _openMessageActions,
                   onShowReactors: _showReactors,
                   onShowSeenDetails: _showSeenDetails,
                   onRetry: () =>
