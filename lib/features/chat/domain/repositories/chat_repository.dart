@@ -2,6 +2,7 @@ import 'package:chat_app/features/chat/domain/entities/chat_message.dart';
 import 'package:chat_app/features/chat/domain/entities/messages_page.dart';
 import 'package:chat_app/features/chat/domain/entities/room_media.dart';
 import 'package:chat_app/features/chat/domain/entities/room_read.dart';
+import 'package:chat_app/features/chat/domain/entities/room_reminder.dart';
 
 abstract interface class ChatRepository {
   Future<MessagesPage> fetchMessages(
@@ -76,6 +77,13 @@ abstract interface class ChatRepository {
   Future<ChatMessage> closePoll({
     required String roomId,
     required String pollId,
+  });
+
+  Future<RoomReminder> createReminder({
+    required String roomId,
+    required String title,
+    required DateTime remindAt,
+    required String repeat,
   });
 
   /// Tin mới từ Socket. Chỉ room đang mở.

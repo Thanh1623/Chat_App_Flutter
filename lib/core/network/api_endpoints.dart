@@ -91,4 +91,6 @@ abstract final class ApiEndpoints {
       '/rooms/$roomId/polls/$pollId/options';
   static String pollClose(String roomId, String pollId) =>
       '/rooms/$roomId/polls/$pollId/close';
+
+  static String roomReminders(String roomId) => '/rooms/$roomId/reminders';
 }

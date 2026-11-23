@@ -236,6 +236,31 @@ class ChatController extends ChangeNotifier {
     }
   }
 
+  Future<void> createReminder({
+    required String title,
+    required DateTime remindAt,
+    required String repeat,
+  }) async {
+    _sending = true;
+    _error = null;
+    notifyListeners();
+    try {
+      await _repo.createReminder(
+        roomId: roomId,
+        title: title,
+        remindAt: remindAt,
+        repeat: repeat,
+      );
+    } on Failure catch (e) {
+      _error = e.message;
+    } catch (e) {
+      _error = e.toString();
+    } finally {
+      _sending = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> votePoll(ChatMessage message, String optionId) async {
     final poll = message.poll;
     if (poll == null || poll.closed) return;

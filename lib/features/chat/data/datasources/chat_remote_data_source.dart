@@ -4,10 +4,12 @@ import 'package:chat_app/core/network/image_multipart.dart';
 import 'package:chat_app/features/chat/data/models/message_model.dart';
 import 'package:chat_app/features/chat/data/models/room_file_model.dart';
 import 'package:chat_app/features/chat/data/models/room_image_model.dart';
+import 'package:chat_app/features/chat/data/models/room_reminder_model.dart';
 import 'package:chat_app/features/chat/domain/entities/chat_message.dart';
 import 'package:chat_app/features/chat/domain/entities/messages_page.dart';
 import 'package:chat_app/features/chat/domain/entities/room_media.dart';
 import 'package:chat_app/features/chat/domain/entities/room_read.dart';
+import 'package:chat_app/features/chat/domain/entities/room_reminder.dart';
 import 'package:dio/dio.dart';
 
 class ChatRemoteDataSource {
@@ -226,6 +228,23 @@ class ChatRemoteDataSource {
       ApiEndpoints.pollClose(roomId, pollId),
     );
     return MessageModel.fromJson(response.data ?? {});
+  }
+
+  Future<RoomReminder> createReminder({
+    required String roomId,
+    required String title,
+    required DateTime remindAt,
+    required String repeat,
+  }) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      ApiEndpoints.roomReminders(roomId),
+      data: {
+        'title': title,
+        'remindAt': remindAt.toUtc().toIso8601String(),
+        'repeat': repeat,
+      },
+    );
+    return RoomReminderModel.fromJson(response.data ?? {}).toEntity();
   }
 
   Future<List<ChatMessage>> fetchPinned(String roomId) async {

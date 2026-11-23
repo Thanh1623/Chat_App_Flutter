@@ -6,6 +6,7 @@ import 'package:chat_app/features/chat/domain/entities/chat_message.dart';
 import 'package:chat_app/features/chat/domain/entities/messages_page.dart';
 import 'package:chat_app/features/chat/domain/entities/room_media.dart';
 import 'package:chat_app/features/chat/domain/entities/room_read.dart';
+import 'package:chat_app/features/chat/domain/entities/room_reminder.dart';
 import 'package:chat_app/features/chat/domain/repositories/chat_repository.dart';
 
 class ChatRepositoryImpl implements ChatRepository {
@@ -226,6 +227,25 @@ class ChatRepositoryImpl implements ChatRepository {
     try {
       final model = await _remote.closePoll(roomId: roomId, pollId: pollId);
       return model.toEntity();
+    } catch (e) {
+      throw mapException(e);
+    }
+  }
+
+  @override
+  Future<RoomReminder> createReminder({
+    required String roomId,
+    required String title,
+    required DateTime remindAt,
+    required String repeat,
+  }) async {
+    try {
+      return await _remote.createReminder(
+        roomId: roomId,
+        title: title,
+        remindAt: remindAt,
+        repeat: repeat,
+      );
     } catch (e) {
       throw mapException(e);
     }

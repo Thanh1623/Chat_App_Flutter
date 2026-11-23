@@ -11,6 +11,7 @@ import 'package:chat_app/features/chat/presentation/images/chat_image_send.dart'
 import 'package:chat_app/features/chat/presentation/providers/chat_controller.dart';
 import 'package:chat_app/features/chat/presentation/widgets/chat_message_avatar.dart';
 import 'package:chat_app/features/chat/presentation/widgets/create_poll_sheet.dart';
+import 'package:chat_app/features/chat/presentation/widgets/create_reminder_sheet.dart';
 import 'package:chat_app/features/chat/presentation/widgets/create_task_sheet.dart';
 import 'package:chat_app/features/chat/presentation/widgets/group_members_sheet.dart';
 import 'package:chat_app/features/chat/presentation/widgets/group_settings_sheet.dart';
@@ -150,6 +151,30 @@ class _ChatPageState extends ConsumerState<ChatPage> {
             allowAddOptions: draft.allowAddOptions,
             closesAt: draft.closesAt,
           );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.toString())));
+    }
+  }
+
+  Future<void> _createReminder() async {
+    try {
+      final draft = await showCreateReminderSheet(context: context);
+      if (draft == null || !mounted) return;
+      await ref
+          .read(chatControllerProvider(widget.conversationId).notifier)
+          .createReminder(
+            title: draft.title,
+            remindAt: draft.remindAt,
+            repeat: draft.repeat,
+          );
+      if (!mounted) return;
+      if (ref.read(chatControllerProvider(widget.conversationId)).error ==
+          null) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Đã tạo nhắc hẹn')));
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
@@ -504,6 +529,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
                       onPickFile: _pickFile,
                       onCreateTask: _createTask,
                       onCreatePoll: widget.isGroup ? _createPoll : null,
+                      onCreateReminder: _createReminder,
                     ),
                   ],
                 );
@@ -1345,6 +1371,7 @@ class _MessageComposer extends StatefulWidget {
     this.onCreatePoll,
     this.replyingTo,
     this.onClearReply,
+    this.onCreateReminder,
   });
 
   final TextEditingController controller;
@@ -1357,6 +1384,7 @@ class _MessageComposer extends StatefulWidget {
   final VoidCallback? onCreatePoll;
   final ChatMessage? replyingTo;
   final VoidCallback? onClearReply;
+  final VoidCallback? onCreateReminder;
 
   @override
   State<_MessageComposer> createState() => _MessageComposerState();
@@ -1464,6 +1492,16 @@ class _MessageComposerState extends State<_MessageComposer> {
                                   ),
                                   tooltip: 'Tạo bình chọn',
                                 ),
+                              IconButton(
+                                onPressed: widget.sending
+                                    ? null
+                                    : widget.onCreateReminder,
+                                icon: Icon(
+                                  Icons.alarm_add_outlined,
+                                  color: primary,
+                                ),
+                                tooltip: 'Tạo nhắc hẹn',
+                              ),
                             ],
                           )
                         : IconButton(
