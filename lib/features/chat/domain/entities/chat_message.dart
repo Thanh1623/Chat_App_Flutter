@@ -81,6 +81,7 @@ class ChatMessage {
   final ChatPoll? poll;
 
   bool get isAgent => role == 'agent';
+  bool get isSystem => role == 'system';
   bool get hasImage {
     final url = imageUrl?.trim() ?? '';
     return url.isNotEmpty;

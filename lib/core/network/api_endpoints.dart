@@ -93,4 +93,7 @@ abstract final class ApiEndpoints {
       '/rooms/$roomId/polls/$pollId/close';
 
   static String roomReminders(String roomId) => '/rooms/$roomId/reminders';
+
+  static String roomReminder(String roomId, String reminderId) =>
+      '/rooms/$roomId/reminders/$reminderId';
 }

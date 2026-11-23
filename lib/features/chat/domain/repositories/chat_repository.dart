@@ -79,12 +79,26 @@ abstract interface class ChatRepository {
     required String pollId,
   });
 
+  Future<List<RoomReminder>> fetchReminders(String roomId);
+
   Future<RoomReminder> createReminder({
     required String roomId,
     required String title,
     required DateTime remindAt,
     required String repeat,
   });
+  Future<RoomReminder> updateReminder({
+    required String roomId,
+    required String reminderId,
+    required String title,
+    required DateTime remindAt,
+    required String repeat,
+  });
+  Future<void> deleteReminder({
+    required String roomId,
+    required String reminderId,
+  });
+  Stream<String> watchReminders(String roomId);
 
   /// Tin mới từ Socket. Chỉ room đang mở.
   Stream<ChatMessage> watchMessages(String roomId);

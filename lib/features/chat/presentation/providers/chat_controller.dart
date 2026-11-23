@@ -6,6 +6,7 @@ import 'package:chat_app/core/storage/session_storage.dart';
 import 'package:chat_app/features/chat/data/providers/chat_repository_provider.dart';
 import 'package:chat_app/features/chat/domain/entities/chat_message.dart';
 import 'package:chat_app/features/chat/domain/entities/room_read.dart';
+import 'package:chat_app/features/chat/domain/entities/room_reminder.dart';
 import 'package:chat_app/features/chat/domain/repositories/chat_repository.dart';
 import 'package:chat_app/features/conversations/presentation/providers/conversations_provider.dart';
 import 'package:chat_app/features/work/data/providers/work_repository_provider.dart';
@@ -39,6 +40,8 @@ class ChatController extends ChangeNotifier {
   /// Giữ subscription để lúc thoát phòng thì cancel (tránh leak).
   StreamSubscription<ChatMessage>? _socketSub;
   StreamSubscription<List<RoomRead>>? _readsSub;
+  StreamSubscription<String>? _remindersSub;
+
   Timer? _flashTimer;
   String? _flashMessageId;
 
@@ -49,6 +52,8 @@ class ChatController extends ChangeNotifier {
   List<ChatMessage> get messages => _messages;
   List<ChatMessage> get pinned => _pinned;
   List<RoomRead> get reads => _reads;
+  List<RoomReminder> _reminders = [];
+  List<RoomReminder> get reminders => _reminders;
   ChatMessage? get replyingTo => _replyingTo;
   String? get flashMessageId => _flashMessageId;
   bool get isLoading => _loading;
@@ -78,6 +83,11 @@ class ChatController extends ChangeNotifier {
         _reads = await _repo.fetchReads(roomId);
       } catch (_) {
         _reads = [];
+      }
+      try {
+        _reminders = await _repo.fetchReminders(roomId);
+      } catch (_) {
+        _reminders = []; // ponytail: list nhắc không chặn chat
       }
       await _markLatestRead();
       _startRealtime();
@@ -132,6 +142,11 @@ class ChatController extends ChangeNotifier {
     _socketSub = _repo.watchMessages(roomId).listen(_onSocketMessage);
     _readsSub?.cancel();
     _readsSub = _repo.watchReads(roomId).listen(_applyReads);
+
+    _remindersSub?.cancel();
+    _remindersSub = _repo.watchReminders(roomId).listen((_) {
+      unawaited(_loadReminders());
+    });
   }
 
   void _applyReads(List<RoomRead> reads) {
@@ -251,6 +266,7 @@ class ChatController extends ChangeNotifier {
         remindAt: remindAt,
         repeat: repeat,
       );
+      await _loadReminders();
     } on Failure catch (e) {
       _error = e.message;
     } catch (e) {
@@ -259,6 +275,52 @@ class ChatController extends ChangeNotifier {
       _sending = false;
       notifyListeners();
     }
+  }
+
+  Future<void> updateReminder({
+    required String reminderId,
+    required String title,
+    required DateTime remindAt,
+    required String repeat,
+  }) async {
+    try {
+      await _repo.updateReminder(
+        roomId: roomId,
+        reminderId: reminderId,
+        title: title,
+        remindAt: remindAt,
+        repeat: repeat,
+      );
+      await _loadReminders();
+    } on Failure catch (e) {
+      _error = e.message;
+      notifyListeners();
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+    }
+  }
+
+  Future<void> deleteReminder(String reminderId) async {
+    try {
+      await _repo.deleteReminder(roomId: roomId, reminderId: reminderId);
+      _reminders = _reminders.where((r) => r.id != reminderId).toList();
+      notifyListeners();
+    } on Failure catch (e) {
+      _error = e.message;
+      notifyListeners();
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+    }
+  }
+
+  /** loadReminders là phương thức để load danh sách nhắc hẹn từ server */
+  Future<void> _loadReminders() async {
+    try {
+      _reminders = await _repo.fetchReminders(roomId);
+      notifyListeners();
+    } catch (_) {}
   }
 
   Future<void> votePoll(ChatMessage message, String optionId) async {
@@ -603,6 +665,7 @@ class ChatController extends ChangeNotifier {
     _flashTimer?.cancel();
     _socketSub?.cancel();
     _readsSub?.cancel();
+    _remindersSub?.cancel();
     super.dispose();
   }
 }

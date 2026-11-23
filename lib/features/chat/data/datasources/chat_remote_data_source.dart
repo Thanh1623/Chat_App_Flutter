@@ -247,6 +247,46 @@ class ChatRemoteDataSource {
     return RoomReminderModel.fromJson(response.data ?? {}).toEntity();
   }
 
+  Future<List<RoomReminder>> fetchReminders(String roomId) async {
+    final response = await _dio.get<dynamic>(
+      ApiEndpoints.roomReminders(roomId),
+    );
+    final list = response.data is List ? response.data as List : const [];
+    return list
+        .whereType<Map>()
+        .map(
+          (item) => RoomReminderModel.fromJson(Map<String, dynamic>.from(item)),
+        )
+        .map((m) => m.toEntity())
+        .where((r) => r.id.isNotEmpty)
+        .toList();
+  }
+
+  Future<RoomReminder> updateReminder({
+    required String roomId,
+    required String reminderId,
+    required String title,
+    required DateTime remindAt,
+    required String repeat,
+  }) async {
+    final response = await _dio.patch<Map<String, dynamic>>(
+      ApiEndpoints.roomReminder(roomId, reminderId),
+      data: {
+        'title': title,
+        'remindAt': remindAt.toUtc().toIso8601String(),
+        'repeat': repeat,
+      },
+    );
+    return RoomReminderModel.fromJson(response.data ?? {}).toEntity();
+  }
+
+  Future<void> deleteReminder({
+    required String roomId,
+    required String reminderId,
+  }) async {
+    await _dio.delete<void>(ApiEndpoints.roomReminder(roomId, reminderId));
+  }
+
   Future<List<ChatMessage>> fetchPinned(String roomId) async {
     final response = await _dio.get<dynamic>(ApiEndpoints.roomPins(roomId));
     final list = response.data is List ? response.data as List : const [];

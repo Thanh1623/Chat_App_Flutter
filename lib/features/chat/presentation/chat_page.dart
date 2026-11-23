@@ -20,6 +20,7 @@ import 'package:chat_app/features/chat/presentation/widgets/message_seen_sheet.d
 import 'package:chat_app/features/chat/presentation/widgets/pinned_messages_sheet.dart';
 import 'package:chat_app/features/chat/presentation/widgets/poll_card.dart';
 import 'package:chat_app/features/chat/presentation/widgets/reaction_users_sheet.dart';
+import 'package:chat_app/features/chat/presentation/widgets/reminders_sheet.dart';
 import 'package:chat_app/features/chat/presentation/widgets/room_media_sheet.dart';
 import 'package:chat_app/features/chat/presentation/widgets/work_task_card.dart';
 import 'package:chat_app/features/conversations/presentation/providers/conversations_provider.dart';
@@ -435,6 +436,14 @@ class _ChatPageState extends ConsumerState<ChatPage> {
               ),
               icon: const Icon(Icons.perm_media_outlined),
             ),
+            IconButton(
+              tooltip: 'Nhắc hẹn',
+              onPressed: () => showRoomRemindersSheet(
+                context: context,
+                roomId: widget.conversationId,
+              ),
+              icon: const Icon(Icons.alarm_outlined),
+            ),
             if (!widget.isGroup)
               IconButton(
                 tooltip: 'Xem hồ sơ',
@@ -679,6 +688,13 @@ class _MessageListState extends State<_MessageList> {
               );
             }
             final message = chat.messages[index];
+            if (message.isSystem) {
+              return _SystemNotice(
+                key: _keyFor(message.id),
+                text: message.content,
+                highlighted: chat.flashMessageId == message.id,
+              );
+            }
             final isMine = widget.myId != null && message.userId == widget.myId;
             return _MessageBubble(
               key: _keyFor(message.id),
@@ -1354,6 +1370,34 @@ class _InBubbleReplyQuote extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _SystemNotice extends StatelessWidget {
+  const _SystemNotice({
+    super.key,
+    required this.text,
+    required this.highlighted,
+  });
+
+  final String text;
+  final bool highlighted;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 220),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 24),
+      color: highlighted
+          ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.08)
+          : Colors.transparent,
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        style: const TextStyle(fontSize: 12, color: Colors.black54),
       ),
     );
   }

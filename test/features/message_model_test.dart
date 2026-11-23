@@ -48,6 +48,16 @@ void main() {
     expect(parsed.toEntity().type, 'text');
     expect(parsed.toEntity().isTask, isFalse);
     expect(parsed.toEntity().isPoll, isFalse);
+    expect(parsed.toEntity().isSystem, isFalse);
+    expect(
+      MessageModel.fromJson({
+        'id': 's1',
+        'role': 'system',
+        'content': '⏰ Nhắc hẹn: Họp',
+        'authorName': 'Hệ thống',
+      }).toEntity().isSystem,
+      isTrue,
+    );
     expect(parsed.toEntity().recalled, isFalse);
     expect(
       MessageModel.fromJson({'id': 'm2', 'recalled': true}).toEntity().recalled,

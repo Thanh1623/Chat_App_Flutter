@@ -1,10 +1,11 @@
+import 'package:chat_app/features/chat/domain/entities/room_reminder.dart';
 import 'package:flutter/material.dart';
 
-// Danh sách các lặp lại của nhắc hẹn
 const reminderRepeats = ['none', 'daily', 'weekly'];
-// Hiển thị sheet tạo nhắc hẹn
+
 Future<CreateReminderDraft?> showCreateReminderSheet({
   required BuildContext context,
+  RoomReminder? editing,
 }) {
   return showModalBottomSheet<CreateReminderDraft>(
     context: context,
@@ -12,12 +13,11 @@ Future<CreateReminderDraft?> showCreateReminderSheet({
     useSafeArea: true,
     builder: (ctx) => Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(ctx).bottom),
-      child: const CreateReminderSheet(),
+      child: CreateReminderSheet(editing: editing),
     ),
   );
 }
 
-// Đối tượng nhắc hẹn
 class CreateReminderDraft {
   const CreateReminderDraft({
     required this.title,
@@ -30,23 +30,32 @@ class CreateReminderDraft {
   final String repeat;
 }
 
-// Widget tạo nhắc hẹn
 class CreateReminderSheet extends StatefulWidget {
-  const CreateReminderSheet({super.key});
+  const CreateReminderSheet({super.key, this.editing});
+
+  final RoomReminder? editing;
 
   @override
   State<CreateReminderSheet> createState() => _CreateReminderSheetState();
 }
 
-// Trạng thái của widget tạo nhắc hẹn
 class _CreateReminderSheetState extends State<CreateReminderSheet> {
   final _title = TextEditingController();
   late DateTime _remindAt;
   String _repeat = 'none';
 
+  bool get _isEdit => widget.editing != null;
+
   @override
   void initState() {
     super.initState();
+    final editing = widget.editing;
+    if (editing != null) {
+      _title.text = editing.title;
+      _remindAt = editing.remindAt.toLocal();
+      _repeat = editing.repeat;
+      return;
+    }
     _remindAt = DateTime.now().add(const Duration(minutes: 15));
   }
 
@@ -56,13 +65,11 @@ class _CreateReminderSheetState extends State<CreateReminderSheet> {
     super.dispose();
   }
 
-  // Kiểm tra xem có thể gửi nhắc hẹn không
   bool get _canSubmit {
     final t = _title.text.trim();
     return t.isNotEmpty && t.length <= 200 && _remindAt.isAfter(DateTime.now());
   }
 
-  // Gửi nhắc hẹn
   void _submit() {
     if (!_canSubmit) return;
     Navigator.of(context).pop(
@@ -74,7 +81,6 @@ class _CreateReminderSheetState extends State<CreateReminderSheet> {
     );
   }
 
-  // Chọn thời gian nhắc hẹn
   Future<void> _pickAt() async {
     final now = DateTime.now();
     final date = await showDatePicker(
@@ -100,20 +106,12 @@ class _CreateReminderSheetState extends State<CreateReminderSheet> {
     });
   }
 
-  // Hiển thị thời gian nhắc hẹn
-  String _atText(DateTime d) {
-    String two(int v) => v.toString().padLeft(2, '0');
-    return '${two(d.day)}/${two(d.month)}/${d.year} ${two(d.hour)}:${two(d.minute)}';
-  }
-
-  // Hiển thị lặp lại nhắc hẹn
   String _repeatLabel(String v) => switch (v) {
     'daily' => 'Hằng ngày',
     'weekly' => 'Hằng tuần',
     _ => 'Không lặp',
   };
 
-  // Xây dựng widget tạo nhắc hẹn
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -135,15 +133,15 @@ class _CreateReminderSheetState extends State<CreateReminderSheet> {
             ),
           ),
           const SizedBox(height: 16),
-          const Text(
-            'Tạo nhắc hẹn',
+          Text(
+            _isEdit ? 'Sửa nhắc hẹn' : 'Tạo nhắc hẹn',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 16),
           TextField(
             controller: _title,
-            autofocus: true,
+            autofocus: !_isEdit,
             maxLength: 200,
             textInputAction: TextInputAction.done,
             onChanged: (_) => setState(() {}),
@@ -156,7 +154,13 @@ class _CreateReminderSheetState extends State<CreateReminderSheet> {
           const SizedBox(height: 12),
           ActionChip(
             avatar: const Icon(Icons.event, size: 16),
-            label: Text(_atText(_remindAt)),
+            label: Text(
+              widget.editing == null
+                  ? _atText(_remindAt)
+                  : _remindAt == widget.editing!.remindAt.toLocal()
+                  ? widget.editing!.remindAtLabel
+                  : _atText(_remindAt),
+            ),
             onPressed: _pickAt,
           ),
           const SizedBox(height: 12),
@@ -174,10 +178,15 @@ class _CreateReminderSheetState extends State<CreateReminderSheet> {
           const SizedBox(height: 16),
           FilledButton(
             onPressed: _canSubmit ? _submit : null,
-            child: const Text('Tạo nhắc hẹn'),
+            child: Text(_isEdit ? 'Lưu' : 'Tạo nhắc hẹn'),
           ),
         ],
       ),
     );
+  }
+
+  String _atText(DateTime d) {
+    String two(int v) => v.toString().padLeft(2, '0');
+    return '${two(d.day)}/${two(d.month)}/${d.year} ${two(d.hour)}:${two(d.minute)}';
   }
 }

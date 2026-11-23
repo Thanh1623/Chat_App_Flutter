@@ -252,6 +252,55 @@ class ChatRepositoryImpl implements ChatRepository {
   }
 
   @override
+  Future<List<RoomReminder>> fetchReminders(String roomId) async {
+    try {
+      return await _remote.fetchReminders(roomId);
+    } catch (e) {
+      throw mapException(e);
+    }
+  }
+
+  @override
+  Future<RoomReminder> updateReminder({
+    required String roomId,
+    required String reminderId,
+    required String title,
+    required DateTime remindAt,
+    required String repeat,
+  }) async {
+    try {
+      return await _remote.updateReminder(
+        roomId: roomId,
+        reminderId: reminderId,
+        title: title,
+        remindAt: remindAt,
+        repeat: repeat,
+      );
+    } catch (e) {
+      throw mapException(e);
+    }
+  }
+
+  @override
+  Future<void> deleteReminder({
+    required String roomId,
+    required String reminderId,
+  }) async {
+    try {
+      await _remote.deleteReminder(roomId: roomId, reminderId: reminderId);
+    } catch (e) {
+      throw mapException(e);
+    }
+  }
+
+  @override
+  Stream<String> watchReminders(String roomId) {
+    return _socket.reminders
+        .map((json) => json['roomId']?.toString() ?? '')
+        .where((id) => id.isEmpty || id == roomId);
+  }
+
+  @override
   Future<ChatMessage> recallMessage(String roomId, String messageId) async {
     try {
       final model = await _remote.recallMessage(roomId, messageId);
