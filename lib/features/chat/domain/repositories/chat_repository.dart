@@ -48,6 +48,36 @@ abstract interface class ChatRepository {
   Future<ChatMessage> recallMessage(String roomId, String messageId);
   Future<void> hideMessage(String roomId, String messageId);
 
+  /// đây là API để tạo một poll trong phòng chat
+  Future<ChatMessage> createPoll({
+    required String roomId,
+    required String question,
+    required List<String> options,
+    required bool multiple,
+    required bool allowAddOptions,
+    DateTime? closesAt,
+  });
+
+  /// đây là API để bình chọn cho một poll trong phòng chat
+  Future<ChatMessage> votePoll({
+    required String roomId,
+    required String pollId,
+    required List<String> optionIds,
+  });
+
+  /// đây là API để thêm một option cho một poll trong phòng chat
+  Future<ChatMessage> addPollOption({
+    required String roomId,
+    required String pollId,
+    required String text,
+  });
+
+  /// đây là API để đóng một poll trong phòng chat
+  Future<ChatMessage> closePoll({
+    required String roomId,
+    required String pollId,
+  });
+
   /// Tin mới từ Socket. Chỉ room đang mở.
   Stream<ChatMessage> watchMessages(String roomId);
   Stream<List<RoomRead>> watchReads(String roomId);

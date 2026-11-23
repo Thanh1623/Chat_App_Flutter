@@ -169,6 +169,65 @@ class ChatRemoteDataSource {
     return parseRoomLinks(response.data);
   }
 
+  /// đây là API để tạo một poll trong phòng chat
+  Future<MessageModel> createPoll({
+    required String roomId,
+    required String question,
+    required List<String> options,
+    required bool multiple,
+    required bool allowAddOptions,
+    DateTime? closesAt,
+  }) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      ApiEndpoints.roomPolls(roomId),
+      data: {
+        'question': question,
+        'options': options,
+        'multiple': multiple,
+        'allowAddOptions': allowAddOptions,
+        if (closesAt != null) 'closesAt': closesAt.toUtc().toIso8601String(),
+      },
+    );
+    return MessageModel.fromJson(response.data ?? {});
+  }
+
+  /// đây là API để bình chọn cho một poll trong phòng chat
+  Future<MessageModel> votePoll({
+    required String roomId,
+    required String pollId,
+    required List<String> optionIds,
+  }) async {
+    final response = await _dio.put<Map<String, dynamic>>(
+      ApiEndpoints.pollVotes(roomId, pollId),
+      data: {'optionIds': optionIds},
+    );
+    return MessageModel.fromJson(response.data ?? {});
+  }
+
+  /// đây là API để thêm một option cho một poll trong phòng chat
+  Future<MessageModel> addPollOption({
+    required String roomId,
+    required String pollId,
+    required String text,
+  }) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      ApiEndpoints.pollOptions(roomId, pollId),
+      data: {'text': text},
+    );
+    return MessageModel.fromJson(response.data ?? {});
+  }
+
+  /// đây là API để đóng một poll trong phòng chat
+  Future<MessageModel> closePoll({
+    required String roomId,
+    required String pollId,
+  }) async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      ApiEndpoints.pollClose(roomId, pollId),
+    );
+    return MessageModel.fromJson(response.data ?? {});
+  }
+
   Future<List<ChatMessage>> fetchPinned(String roomId) async {
     final response = await _dio.get<dynamic>(ApiEndpoints.roomPins(roomId));
     final list = response.data is List ? response.data as List : const [];

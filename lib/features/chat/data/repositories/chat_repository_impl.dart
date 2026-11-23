@@ -137,11 +137,7 @@ class ChatRepositoryImpl implements ChatRepository {
     required bool pinned,
   }) async {
     try {
-      final model = await _remote.pinMessage(
-        roomId,
-        messageId,
-        pinned: pinned,
-      );
+      final model = await _remote.pinMessage(roomId, messageId, pinned: pinned);
       return model.toEntity();
     } catch (e) {
       throw mapException(e);
@@ -155,11 +151,80 @@ class ChatRepositoryImpl implements ChatRepository {
     required String emoji,
   }) async {
     try {
-      final model = await _remote.reactMessage(
-        roomId,
-        messageId,
-        emoji: emoji,
+      final model = await _remote.reactMessage(roomId, messageId, emoji: emoji);
+      return model.toEntity();
+    } catch (e) {
+      throw mapException(e);
+    }
+  }
+
+  @override
+  Future<ChatMessage> createPoll({
+    required String roomId,
+    required String question,
+    required List<String> options,
+    required bool multiple,
+    required bool allowAddOptions,
+    DateTime? closesAt,
+  }) async {
+    try {
+      final model = await _remote.createPoll(
+        roomId: roomId,
+        question: question,
+        options: options,
+        multiple: multiple,
+        allowAddOptions: allowAddOptions,
+        closesAt: closesAt,
       );
+      return model.toEntity();
+    } catch (e) {
+      throw mapException(e);
+    }
+  }
+
+  @override
+  Future<ChatMessage> votePoll({
+    required String roomId,
+    required String pollId,
+    required List<String> optionIds,
+  }) async {
+    try {
+      final model = await _remote.votePoll(
+        roomId: roomId,
+        pollId: pollId,
+        optionIds: optionIds,
+      );
+      return model.toEntity();
+    } catch (e) {
+      throw mapException(e);
+    }
+  }
+
+  @override
+  Future<ChatMessage> addPollOption({
+    required String roomId,
+    required String pollId,
+    required String text,
+  }) async {
+    try {
+      final model = await _remote.addPollOption(
+        roomId: roomId,
+        pollId: pollId,
+        text: text,
+      );
+      return model.toEntity();
+    } catch (e) {
+      throw mapException(e);
+    }
+  }
+
+  @override
+  Future<ChatMessage> closePoll({
+    required String roomId,
+    required String pollId,
+  }) async {
+    try {
+      final model = await _remote.closePoll(roomId: roomId, pollId: pollId);
       return model.toEntity();
     } catch (e) {
       throw mapException(e);

@@ -1,5 +1,6 @@
 import 'package:chat_app/features/chat/domain/entities/chat_message.dart';
 
+/** MessageModel dùng để parse message từ json */
 class MessageModel {
   const MessageModel({
     required this.id,
@@ -23,6 +24,7 @@ class MessageModel {
     this.replyTo,
     this.type = 'text',
     this.task,
+    this.poll,
   });
 
   final String id;
@@ -46,6 +48,7 @@ class MessageModel {
   final MessageReplyTo? replyTo;
   final String type;
   final MessageTask? task;
+  final ChatPoll? poll;
   ChatMessage toEntity() => ChatMessage(
     id: id,
     roomId: roomId,
@@ -68,6 +71,7 @@ class MessageModel {
     replyTo: replyTo,
     type: type,
     task: task,
+    poll: poll,
   );
 
   factory MessageModel.fromJson(Map<String, dynamic> json) {
@@ -97,10 +101,12 @@ class MessageModel {
       replyTo: _replyToFromJson(json['replyTo']),
       type: json['type']?.toString() ?? 'text',
       task: _taskFromJson(json['task']),
+      poll: _pollFromJson(json['poll']),
     );
   }
 }
 
+/** _replyToFromJson dùng để parse replyTo từ json */
 MessageReplyTo? _replyToFromJson(dynamic raw) {
   if (raw is! Map<String, dynamic>) return null;
   final id = raw['id']?.toString() ?? '';
@@ -114,6 +120,7 @@ MessageReplyTo? _replyToFromJson(dynamic raw) {
   );
 }
 
+/** _reactionsFromJson dùng để parse reactions từ json */
 List<MessageReaction> _reactionsFromJson(dynamic raw) {
   if (raw is! List) return const [];
   return raw
@@ -154,6 +161,7 @@ List<MessageReaction> _reactionsFromJson(dynamic raw) {
       .toList();
 }
 
+/** _taskFromJson dùng để parse task từ json */
 MessageTask? _taskFromJson(dynamic raw) {
   if (raw is! Map<String, dynamic>) return null;
   final id = raw['id']?.toString() ?? '';
@@ -168,5 +176,50 @@ MessageTask? _taskFromJson(dynamic raw) {
     assigneeId: raw['assigneeId']?.toString() ?? '',
     creatorName: raw['creatorName']?.toString() ?? '',
     assigneeName: raw['assigneeName']?.toString() ?? '',
+  );
+}
+
+/** _pollFromJson dùng để parse poll từ json */
+ChatPoll? _pollFromJson(dynamic raw) {
+  if (raw is! Map<String, dynamic>) return null;
+  final id = raw['id']?.toString() ?? '';
+  if (id.isEmpty) return null;
+  final optionsRaw = raw['options'];
+  final options = optionsRaw is List
+      ? optionsRaw
+            .whereType<Map<String, dynamic>>()
+            .map((item) {
+              final idsRaw = item['voterIds'];
+              final voterIds = idsRaw is List
+                  ? idsRaw
+                        .map((e) => e.toString())
+                        .where((e) => e.isNotEmpty)
+                        .toList()
+                  : const <String>[];
+              return ChatPollOption(
+                id: item['id']?.toString() ?? '',
+                text: item['text']?.toString() ?? '',
+                count: item['count'] is num
+                    ? (item['count'] as num).toInt()
+                    : int.tryParse(item['count']?.toString() ?? '') ??
+                          voterIds.length,
+                voterIds: voterIds,
+              );
+            })
+            .where((o) => o.id.isNotEmpty)
+            .toList()
+      : const <ChatPollOption>[];
+  return ChatPoll(
+    id: id,
+    question: raw['question']?.toString() ?? '',
+    multiple: raw['multiple'] == true,
+    allowAddOptions: raw['allowAddOptions'] == true,
+    closesAt: DateTime.tryParse(raw['closesAt']?.toString() ?? ''),
+    closed: raw['closed'] == true,
+    creatorId: raw['creatorId']?.toString() ?? '',
+    totalVoters: raw['totalVoters'] is num
+        ? (raw['totalVoters'] as num).toInt()
+        : int.tryParse(raw['totalVoters']?.toString() ?? '') ?? 0,
+    options: options,
   );
 }

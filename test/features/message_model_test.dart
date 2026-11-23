@@ -47,6 +47,7 @@ void main() {
     expect(parsed.toEntity().replyTo?.preview, 'hi');
     expect(parsed.toEntity().type, 'text');
     expect(parsed.toEntity().isTask, isFalse);
+    expect(parsed.toEntity().isPoll, isFalse);
     expect(parsed.toEntity().recalled, isFalse);
     expect(
       MessageModel.fromJson({'id': 'm2', 'recalled': true}).toEntity().recalled,

@@ -83,4 +83,12 @@ abstract final class ApiEndpoints {
       '/news/posts/$postId/reactions';
 
   static String newsComment(String commentId) => '/news/comments/$commentId';
+
+  static String roomPolls(String roomId) => '/rooms/$roomId/polls';
+  static String pollVotes(String roomId, String pollId) =>
+      '/rooms/$roomId/polls/$pollId/votes';
+  static String pollOptions(String roomId, String pollId) =>
+      '/rooms/$roomId/polls/$pollId/options';
+  static String pollClose(String roomId, String pollId) =>
+      '/rooms/$roomId/polls/$pollId/close';
 }

@@ -165,7 +165,9 @@ class ChatController extends ChangeNotifier {
     _error = null;
     notifyListeners();
     try {
-      final sent = await _ref.read(workRepositoryProvider).createTask(
+      final sent = await _ref
+          .read(workRepositoryProvider)
+          .createTask(
             roomId: roomId,
             title: title,
             assigneeId: assigneeId,
@@ -188,10 +190,108 @@ class ChatController extends ChangeNotifier {
     final task = message.task;
     if (task == null) return;
     try {
-      final updated = await _ref.read(workRepositoryProvider).updateTask(
-            taskId: task.id,
-            status: task.isDone ? 'open' : 'done',
+      final updated = await _ref
+          .read(workRepositoryProvider)
+          .updateTask(taskId: task.id, status: task.isDone ? 'open' : 'done');
+      _upsert(updated, insertIfMissing: false);
+    } on Failure catch (e) {
+      _error = e.message;
+      notifyListeners();
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+    }
+  }
+
+  Future<void> createPoll({
+    required String question,
+    required List<String> options,
+    required bool multiple,
+    required bool allowAddOptions,
+    DateTime? closesAt,
+  }) async {
+    _sending = true;
+    _error = null;
+    notifyListeners();
+    try {
+      final sent = await _ref
+          .read(chatRepositoryProvider)
+          .createPoll(
+            roomId: roomId,
+            question: question,
+            options: options,
+            multiple: multiple,
+            allowAddOptions: allowAddOptions,
+            closesAt: closesAt,
           );
+      _upsert(sent, insertIfMissing: true);
+      await _markLatestRead();
+    } on Failure catch (e) {
+      _error = e.message;
+    } catch (e) {
+      _error = e.toString();
+    } finally {
+      _sending = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> votePoll(ChatMessage message, String optionId) async {
+    final poll = message.poll;
+    if (poll == null || poll.closed) return;
+    final myId = _ref.read(sessionStorageProvider).user?.id ?? '';
+    final mine = [
+      for (final o in poll.options)
+        if (o.voterIds.contains(myId)) o.id,
+    ];
+    List<String> next;
+    if (poll.multiple) {
+      next = mine.contains(optionId)
+          ? mine.where((id) => id != optionId).toList()
+          : [...mine, optionId];
+    } else {
+      next = mine.contains(optionId) ? <String>[] : [optionId];
+    }
+    try {
+      final updated = await _repo.votePoll(
+        roomId: roomId,
+        pollId: poll.id,
+        optionIds: next,
+      );
+      _upsert(updated, insertIfMissing: false);
+    } on Failure catch (e) {
+      _error = e.message;
+      notifyListeners();
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+    }
+  }
+
+  Future<void> addPollOption(ChatMessage message, String text) async {
+    final poll = message.poll;
+    if (poll == null) return;
+    try {
+      final updated = await _repo.addPollOption(
+        roomId: roomId,
+        pollId: poll.id,
+        text: text.trim(),
+      );
+      _upsert(updated, insertIfMissing: false);
+    } on Failure catch (e) {
+      _error = e.message;
+      notifyListeners();
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+    }
+  }
+
+  Future<void> closePoll(ChatMessage message) async {
+    final poll = message.poll;
+    if (poll == null) return;
+    try {
+      final updated = await _repo.closePoll(roomId: roomId, pollId: poll.id);
       _upsert(updated, insertIfMissing: false);
     } on Failure catch (e) {
       _error = e.message;

@@ -1,9 +1,8 @@
-import 'package:chat_app/features/presence/presentation/presence_provider.dart';
 import 'package:chat_app/app/router/routes.dart';
 import 'package:chat_app/core/storage/session_storage.dart';
-import 'package:chat_app/features/auth/presentation/providers/auth_controller.dart';
 import 'package:chat_app/core/widgets/confirm_dialog.dart';
 import 'package:chat_app/core/widgets/error_view.dart';
+import 'package:chat_app/features/auth/presentation/providers/auth_controller.dart';
 import 'package:chat_app/features/chat/domain/entities/chat_message.dart';
 import 'package:chat_app/features/chat/domain/entities/room_read.dart';
 import 'package:chat_app/features/chat/presentation/files/chat_file_format.dart';
@@ -11,20 +10,23 @@ import 'package:chat_app/features/chat/presentation/files/chat_file_send.dart';
 import 'package:chat_app/features/chat/presentation/images/chat_image_send.dart';
 import 'package:chat_app/features/chat/presentation/providers/chat_controller.dart';
 import 'package:chat_app/features/chat/presentation/widgets/chat_message_avatar.dart';
+import 'package:chat_app/features/chat/presentation/widgets/create_poll_sheet.dart';
+import 'package:chat_app/features/chat/presentation/widgets/create_task_sheet.dart';
 import 'package:chat_app/features/chat/presentation/widgets/group_members_sheet.dart';
 import 'package:chat_app/features/chat/presentation/widgets/group_settings_sheet.dart';
 import 'package:chat_app/features/chat/presentation/widgets/message_actions_sheet.dart';
-import 'package:chat_app/features/chat/presentation/widgets/pinned_messages_sheet.dart';
-import 'package:chat_app/features/chat/presentation/widgets/room_media_sheet.dart';
 import 'package:chat_app/features/chat/presentation/widgets/message_seen_sheet.dart';
+import 'package:chat_app/features/chat/presentation/widgets/pinned_messages_sheet.dart';
+import 'package:chat_app/features/chat/presentation/widgets/poll_card.dart';
 import 'package:chat_app/features/chat/presentation/widgets/reaction_users_sheet.dart';
-import 'package:chat_app/features/chat/presentation/widgets/create_task_sheet.dart';
+import 'package:chat_app/features/chat/presentation/widgets/room_media_sheet.dart';
 import 'package:chat_app/features/chat/presentation/widgets/work_task_card.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:chat_app/features/conversations/presentation/providers/conversations_provider.dart';
+import 'package:chat_app/features/presence/presentation/presence_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ChatPage extends ConsumerStatefulWidget {
   const ChatPage({
@@ -72,9 +74,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           .fetchRoomMembers(widget.conversationId);
       if (!mounted) return;
       setState(() {
-        _avatarByUserId = {
-          for (final m in members) m.id: m.avatarUrl,
-        };
+        _avatarByUserId = {for (final m in members) m.id: m.avatarUrl};
       });
     } catch (_) {
       // ponytail: avatar fallback từ message.authorAvatarUrl
@@ -132,9 +132,28 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.toString())));
+    }
+  }
+
+  Future<void> _createPoll() async {
+    try {
+      final draft = await showCreatePollSheet(context: context);
+      if (draft == null || !mounted) return;
+      await ref
+          .read(chatControllerProvider(widget.conversationId).notifier)
+          .createPoll(
+            question: draft.question,
+            options: draft.options,
+            multiple: draft.multiple,
+            allowAddOptions: draft.allowAddOptions,
+            closesAt: draft.closesAt,
+          );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.toString())));
     }
   }
 
@@ -183,7 +202,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       return;
     }
 
-    final myId = ref.read(authControllerProvider).user?.id ??
+    final myId =
+        ref.read(authControllerProvider).user?.id ??
         ref.read(sessionStorageProvider).user?.id;
     final myIdNorm = myId?.trim() ?? '';
     try {
@@ -201,15 +221,14 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       }
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Không tìm thấy hồ sơ')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Không tìm thấy hồ sơ')));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(e.toString())));
       }
     }
   }
@@ -239,8 +258,9 @@ class _ChatPageState extends ConsumerState<ChatPage> {
   }
 
   void _openMessageActions(ChatMessage message) {
-    final chat =
-        ref.read(chatControllerProvider(widget.conversationId).notifier);
+    final chat = ref.read(
+      chatControllerProvider(widget.conversationId).notifier,
+    );
     final myId = ref.read(sessionStorageProvider).user?.id;
     final mine = myId != null && message.userId == myId && !message.isAgent;
     showMessageActions(
@@ -319,9 +339,8 @@ class _ChatPageState extends ConsumerState<ChatPage> {
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())),
-        );
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(e.toString())));
       }
     }
   }
@@ -336,12 +355,12 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         .valueOrNull
         ?.items
         .where((c) => c.id == roomId);
-    final inboxTitle =
-        inboxMatches == null || inboxMatches.isEmpty ? null : inboxMatches.first.title;
-    final appBarTitle = (inboxTitle?.trim().isNotEmpty == true
-            ? inboxTitle
-            : widget.title)
-        ?.trim();
+    final inboxTitle = inboxMatches == null || inboxMatches.isEmpty
+        ? null
+        : inboxMatches.first.title;
+    final appBarTitle =
+        (inboxTitle?.trim().isNotEmpty == true ? inboxTitle : widget.title)
+            ?.trim();
 
     return PopScope(
       onPopInvokedWithResult: (didPop, _) {
@@ -350,148 +369,148 @@ class _ChatPageState extends ConsumerState<ChatPage> {
         }
       },
       child: Scaffold(
-      backgroundColor: const Color(0xFFF0F2F5),
-      resizeToAvoidBottomInset: true,
-      appBar: AppBar(
-        backgroundColor: primary,
-        foregroundColor: Colors.white,
-        title: InkWell(
-          onTap: widget.isGroup ? _openGroupSettings : _openDirectPeerProfile,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                appBarTitle?.isNotEmpty == true ? appBarTitle! : 'Chat',
-              ),
-              if (!widget.isGroup && _directPeerUserId() != null)
-                Consumer(
-                  builder: (context, ref, _) {
-                    final online = ref.watch(
-                      isUserOnlineProvider(_directPeerUserId()),
-                    );
-                    return Text(
-                      online ? 'Đang hoạt động' : 'Không hoạt động',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w400,
-                        color: online
-                            ? const Color(0xFFB9F6CA)
-                            : Colors.white70,
-                      ),
-                    );
-                  },
-                ),
-            ],
-          ),
-        ),
-        actions: [
-          IconButton(
-            tooltip: 'Ảnh, file, link',
-            onPressed: () => showRoomMediaSheet(
-              context: context,
-              roomId: widget.conversationId,
-            ),
-            icon: const Icon(Icons.perm_media_outlined),
-          ),
-          if (!widget.isGroup)
-            IconButton(
-              tooltip: 'Xem hồ sơ',
-              onPressed: _openDirectPeerProfile,
-              icon: const Icon(Icons.person_outline),
-            ),
-          if (widget.isGroup)
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert),
-              onSelected: (value) {
-                if (value == 'settings') _openGroupSettings();
-                if (value == 'members') _openMembers();
-                if (value == 'delete') _confirmDeleteGroup();
-              },
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'settings',
-                  child: Text('Đổi tên / ảnh nhóm'),
-                ),
-                const PopupMenuItem(
-                  value: 'members',
-                  child: Text('Thành viên'),
-                ),
-                if (widget.canDelete)
-                  const PopupMenuItem(
-                    value: 'delete',
-                    child: Text('Xóa nhóm'),
+        backgroundColor: const Color(0xFFF0F2F5),
+        resizeToAvoidBottomInset: true,
+        appBar: AppBar(
+          backgroundColor: primary,
+          foregroundColor: Colors.white,
+          title: InkWell(
+            onTap: widget.isGroup ? _openGroupSettings : _openDirectPeerProfile,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(appBarTitle?.isNotEmpty == true ? appBarTitle! : 'Chat'),
+                if (!widget.isGroup && _directPeerUserId() != null)
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final online = ref.watch(
+                        isUserOnlineProvider(_directPeerUserId()),
+                      );
+                      return Text(
+                        online ? 'Đang hoạt động' : 'Không hoạt động',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w400,
+                          color: online
+                              ? const Color(0xFFB9F6CA)
+                              : Colors.white70,
+                        ),
+                      );
+                    },
                   ),
               ],
             ),
-        ],
-      ),
-      body: Column(
-        children: [
-          PinnedMessagesBanner(roomId: roomId),
-          Expanded(
-            child: Consumer(
+          ),
+          actions: [
+            IconButton(
+              tooltip: 'Ảnh, file, link',
+              onPressed: () => showRoomMediaSheet(
+                context: context,
+                roomId: widget.conversationId,
+              ),
+              icon: const Icon(Icons.perm_media_outlined),
+            ),
+            if (!widget.isGroup)
+              IconButton(
+                tooltip: 'Xem hồ sơ',
+                onPressed: _openDirectPeerProfile,
+                icon: const Icon(Icons.person_outline),
+              ),
+            if (widget.isGroup)
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert),
+                onSelected: (value) {
+                  if (value == 'settings') _openGroupSettings();
+                  if (value == 'members') _openMembers();
+                  if (value == 'delete') _confirmDeleteGroup();
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'settings',
+                    child: Text('Đổi tên / ảnh nhóm'),
+                  ),
+                  const PopupMenuItem(
+                    value: 'members',
+                    child: Text('Thành viên'),
+                  ),
+                  if (widget.canDelete)
+                    const PopupMenuItem(
+                      value: 'delete',
+                      child: Text('Xóa nhóm'),
+                    ),
+                ],
+              ),
+          ],
+        ),
+        body: Column(
+          children: [
+            PinnedMessagesBanner(roomId: roomId),
+            Expanded(
+              child: Consumer(
+                builder: (context, ref, _) {
+                  final chat = ref.watch(chatControllerProvider(roomId));
+                  final myAvatar =
+                      ref.watch(authControllerProvider).user?.avatarUrl ?? '';
+                  return _MessageList(
+                    chat: chat,
+                    myId: myId,
+                    myAvatarUrl: myAvatar,
+                    avatarByUserId: _avatarByUserId,
+                    showSenderNames: widget.isGroup,
+                    isGroup: widget.isGroup,
+                    onOpenSenderProfile: _openUserProfile,
+                    onPinToggle: _openMessageActions,
+                    onShowReactors: _showReactors,
+                    onShowSeenDetails: _showSeenDetails,
+                    onRetry: () => ref
+                        .read(chatControllerProvider(roomId).notifier)
+                        .load(),
+                    onLoadMore: () => ref
+                        .read(chatControllerProvider(roomId).notifier)
+                        .loadMore(),
+                    onToggleTask: (message) => ref
+                        .read(chatControllerProvider(roomId).notifier)
+                        .toggleTaskStatus(message),
+                  );
+                },
+              ),
+            ),
+            Consumer(
               builder: (context, ref, _) {
                 final chat = ref.watch(chatControllerProvider(roomId));
-                final myAvatar =
-                    ref.watch(authControllerProvider).user?.avatarUrl ?? '';
-                return _MessageList(
-                  chat: chat,
-                  myId: myId,
-                  myAvatarUrl: myAvatar,
-                  avatarByUserId: _avatarByUserId,
-                  showSenderNames: widget.isGroup,
-                  isGroup: widget.isGroup,
-                  onOpenSenderProfile: _openUserProfile,
-                  onPinToggle: _openMessageActions,
-                  onShowReactors: _showReactors,
-                  onShowSeenDetails: _showSeenDetails,
-                  onRetry: () =>
-                      ref.read(chatControllerProvider(roomId).notifier).load(),
-                  onLoadMore: () => ref
-                      .read(chatControllerProvider(roomId).notifier)
-                      .loadMore(),
-                  onToggleTask: (message) => ref
-                      .read(chatControllerProvider(roomId).notifier)
-                      .toggleTaskStatus(message),
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (chat.error != null && chat.messages.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
+                        child: Text(
+                          chat.error!,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                        ),
+                      ),
+                    _MessageComposer(
+                      controller: _composer,
+                      focusNode: _composerFocus,
+                      sending: chat.isSending,
+                      replyingTo: chat.replyingTo,
+                      onClearReply: () => ref
+                          .read(chatControllerProvider(roomId).notifier)
+                          .clearReply(),
+                      onSend: _send,
+                      onPickImage: _pickImage,
+                      onPickFile: _pickFile,
+                      onCreateTask: _createTask,
+                      onCreatePoll: widget.isGroup ? _createPoll : null,
+                    ),
+                  ],
                 );
               },
             ),
-          ),
-          Consumer(
-            builder: (context, ref, _) {
-              final chat = ref.watch(chatControllerProvider(roomId));
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (chat.error != null && chat.messages.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
-                      child: Text(
-                        chat.error!,
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.error,
-                        ),
-                      ),
-                    ),
-                  _MessageComposer(
-                    controller: _composer,
-                    focusNode: _composerFocus,
-                    sending: chat.isSending,
-                    replyingTo: chat.replyingTo,
-                    onClearReply: () => ref
-                        .read(chatControllerProvider(roomId).notifier)
-                        .clearReply(),
-                    onSend: _send,
-                    onPickImage: _pickImage,
-                    onPickFile: _pickFile,
-                    onCreateTask: _createTask,
-                  ),
-                ],
-              );
-            },
-          ),
-        ],
-      ),
+          ],
+        ),
       ),
     );
   }
@@ -564,8 +583,7 @@ class _MessageListState extends State<_MessageList> {
     super.dispose();
   }
 
-  GlobalKey _keyFor(String id) =>
-      _itemKeys.putIfAbsent(id, GlobalKey.new);
+  GlobalKey _keyFor(String id) => _itemKeys.putIfAbsent(id, GlobalKey.new);
 
   void _scrollToMessage(String id) {
     final ctx = _keyFor(id).currentContext;
@@ -764,8 +782,9 @@ class _MessageBubble extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
-        mainAxisAlignment:
-            isMine ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: isMine
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (showAvatar) ...[
@@ -989,6 +1008,9 @@ class _BubbleBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (message.isPoll) {
+      return PollCard(message: message, myId: myId);
+    }
     if (message.isTask) {
       return WorkTaskCard(
         message: message,
@@ -1028,8 +1050,8 @@ class _BubbleBody extends StatelessWidget {
     final bg = isMine
         ? primary
         : message.isAgent
-            ? const Color(0xFFFFF3E0)
-            : Colors.white;
+        ? const Color(0xFFFFF3E0)
+        : Colors.white;
     final textColor = isMine ? Colors.white : Colors.black87;
     final hasText = message.content.trim().isNotEmpty;
     final url = message.imageUrl?.trim() ?? '';
@@ -1065,7 +1087,9 @@ class _BubbleBody extends StatelessWidget {
               ),
             if (fileUrl.isNotEmpty)
               Material(
-                color: isMine ? Colors.white.withValues(alpha: 0.12) : Colors.black12,
+                color: isMine
+                    ? Colors.white.withValues(alpha: 0.12)
+                    : Colors.black12,
                 child: InkWell(
                   onTap: () => _openFile(context, fileUrl),
                   child: Padding(
@@ -1094,8 +1118,9 @@ class _BubbleBody extends StatelessWidget {
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
-                                    color:
-                                        isMine ? Colors.white : Colors.black87,
+                                    color: isMine
+                                        ? Colors.white
+                                        : Colors.black87,
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
@@ -1166,9 +1191,8 @@ class _BubbleBody extends StatelessWidget {
     if (uri == null) return;
     final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!ok && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Không mở được tệp')),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Không mở được tệp')));
     }
   }
 
@@ -1237,7 +1261,9 @@ class _InBubbleReplyQuote extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bar = isMine ? Colors.white : Theme.of(context).colorScheme.primary;
-    final nameColor = isMine ? Colors.white : Theme.of(context).colorScheme.primary;
+    final nameColor = isMine
+        ? Colors.white
+        : Theme.of(context).colorScheme.primary;
     final textColor = isMine ? Colors.white70 : Colors.black54;
     final fill = isMine
         ? Colors.white.withValues(alpha: 0.16)
@@ -1278,7 +1304,11 @@ class _InBubbleReplyQuote extends StatelessWidget {
                       reply.preview,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 12, height: 1.25, color: textColor),
+                      style: TextStyle(
+                        fontSize: 12,
+                        height: 1.25,
+                        color: textColor,
+                      ),
                     ),
                   ],
                 ),
@@ -1312,6 +1342,7 @@ class _MessageComposer extends StatefulWidget {
     required this.onPickImage,
     required this.onPickFile,
     this.onCreateTask,
+    this.onCreatePoll,
     this.replyingTo,
     this.onClearReply,
   });
@@ -1323,6 +1354,7 @@ class _MessageComposer extends StatefulWidget {
   final VoidCallback onPickImage;
   final VoidCallback onPickFile;
   final VoidCallback? onCreateTask;
+  final VoidCallback? onCreatePoll;
   final ChatMessage? replyingTo;
   final VoidCallback? onClearReply;
 
@@ -1381,94 +1413,111 @@ class _MessageComposerState extends State<_MessageComposer> {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (reply != null)
-              _ComposerReplyBar(
-                message: reply,
-                onClear: widget.onClearReply,
-              ),
+              _ComposerReplyBar(message: reply, onClear: widget.onClearReply),
             Padding(
-          padding: const EdgeInsets.fromLTRB(8, 8, 4, 8),
-          child: Row(
-            children: [
-              AnimatedSize(
-                duration: const Duration(milliseconds: 180),
-                curve: Curves.easeOut,
-                alignment: Alignment.centerLeft,
-                child: _actionsExpanded
-                    ? Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            onPressed:
-                                widget.sending ? null : widget.onPickImage,
-                            icon: Icon(Icons.image_outlined, color: primary),
-                            tooltip: 'Gửi ảnh',
+              padding: const EdgeInsets.fromLTRB(8, 8, 4, 8),
+              child: Row(
+                children: [
+                  AnimatedSize(
+                    duration: const Duration(milliseconds: 180),
+                    curve: Curves.easeOut,
+                    alignment: Alignment.centerLeft,
+                    child: _actionsExpanded
+                        ? Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                onPressed: widget.sending
+                                    ? null
+                                    : widget.onPickImage,
+                                icon: Icon(
+                                  Icons.image_outlined,
+                                  color: primary,
+                                ),
+                                tooltip: 'Gửi ảnh',
+                              ),
+                              IconButton(
+                                onPressed: widget.sending
+                                    ? null
+                                    : widget.onPickFile,
+                                icon: Icon(Icons.attach_file, color: primary),
+                                tooltip: 'Gửi tệp',
+                              ),
+                              IconButton(
+                                onPressed: widget.sending
+                                    ? null
+                                    : widget.onCreateTask,
+                                icon: Icon(
+                                  Icons.checklist_outlined,
+                                  color: primary,
+                                ),
+                                tooltip: 'Giao việc',
+                              ),
+                              if (widget.onCreatePoll != null)
+                                IconButton(
+                                  onPressed: widget.sending
+                                      ? null
+                                      : widget.onCreatePoll,
+                                  icon: Icon(
+                                    Icons.poll_outlined,
+                                    color: primary,
+                                  ),
+                                  tooltip: 'Tạo bình chọn',
+                                ),
+                            ],
+                          )
+                        : IconButton(
+                            onPressed: _expandActions,
+                            icon: Icon(Icons.chevron_right, color: primary),
+                            tooltip: 'Thêm',
                           ),
-                          IconButton(
-                            onPressed:
-                                widget.sending ? null : widget.onPickFile,
-                            icon: Icon(Icons.attach_file, color: primary),
-                            tooltip: 'Gửi tệp',
-                          ),
-                          IconButton(
-                            onPressed:
-                                widget.sending ? null : widget.onCreateTask,
-                            icon: Icon(Icons.checklist_outlined, color: primary),
-                            tooltip: 'Giao việc',
-                          ),
-                        ],
-                      )
-                    : IconButton(
-                        onPressed: _expandActions,
-                        icon: Icon(Icons.chevron_right, color: primary),
-                        tooltip: 'Thêm',
+                  ),
+                  Expanded(
+                    child: TextField(
+                      controller: widget.controller,
+                      focusNode: widget.focusNode,
+                      minLines: 1,
+                      maxLines: 4,
+                      textInputAction: TextInputAction.send,
+                      onTap: _collapseActions,
+                      onSubmitted: (_) => widget.onSend(),
+                      decoration: InputDecoration(
+                        hintText: reply == null
+                            ? 'Tin nhắn'
+                            : 'Trả lời ${reply.authorName}',
+                        filled: true,
+                        fillColor: const Color(0xFFF0F2F5),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(20),
+                          borderSide: BorderSide.none,
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(20),
+                          borderSide: BorderSide.none,
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(20),
+                          borderSide: BorderSide.none,
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
                       ),
-              ),
-              Expanded(
-                child: TextField(
-                  controller: widget.controller,
-                  focusNode: widget.focusNode,
-                  minLines: 1,
-                  maxLines: 4,
-                  textInputAction: TextInputAction.send,
-                  onTap: _collapseActions,
-                  onSubmitted: (_) => widget.onSend(),
-                  decoration: InputDecoration(
-                    hintText: reply == null
-                        ? 'Tin nhắn'
-                        : 'Trả lời ${reply.authorName}',
-                    filled: true,
-                    fillColor: const Color(0xFFF0F2F5),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      borderSide: BorderSide.none,
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      borderSide: BorderSide.none,
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 10,
                     ),
                   ),
-                ),
+                  IconButton(
+                    onPressed: widget.sending ? null : widget.onSend,
+                    icon: widget.sending
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Icon(Icons.send, color: primary),
+                  ),
+                ],
               ),
-              IconButton(
-                onPressed: widget.sending ? null : widget.onSend,
-                icon: widget.sending
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : Icon(Icons.send, color: primary),
-              ),
-            ],
-          ),
             ),
           ],
         ),
@@ -1478,10 +1527,7 @@ class _MessageComposerState extends State<_MessageComposer> {
 }
 
 class _ComposerReplyBar extends StatelessWidget {
-  const _ComposerReplyBar({
-    required this.message,
-    this.onClear,
-  });
+  const _ComposerReplyBar({required this.message, this.onClear});
 
   final ChatMessage message;
   final VoidCallback? onClear;
@@ -1492,10 +1538,10 @@ class _ComposerReplyBar extends StatelessWidget {
     final thumb = message.imageUrl?.trim() ?? '';
     final preview = message.content.trim().isEmpty
         ? (message.hasImage
-            ? 'Ảnh'
-            : message.hasFile
-                ? 'Tệp'
-                : 'Tin nhắn')
+              ? 'Ảnh'
+              : message.hasFile
+              ? 'Tệp'
+              : 'Tin nhắn')
         : message.content;
 
     return Column(

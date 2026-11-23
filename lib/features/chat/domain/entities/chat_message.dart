@@ -54,6 +54,7 @@ class ChatMessage {
     this.replyTo,
     this.type = 'text',
     this.task,
+    this.poll,
   });
 
   final String id;
@@ -77,6 +78,7 @@ class ChatMessage {
   final MessageReplyTo? replyTo;
   final String type;
   final MessageTask? task;
+  final ChatPoll? poll;
 
   bool get isAgent => role == 'agent';
   bool get hasImage {
@@ -90,6 +92,7 @@ class ChatMessage {
   }
 
   bool get isTask => type == 'task' && task != null;
+  bool get isPoll => poll != null && !recalled;
 }
 
 class MessageReplyTo {
@@ -140,4 +143,42 @@ class MessageTask {
   final String assigneeName;
 
   bool get isDone => status == 'done';
+}
+
+class ChatPoll {
+  const ChatPoll({
+    required this.id,
+    required this.question,
+    required this.multiple,
+    required this.allowAddOptions,
+    required this.closed,
+    required this.creatorId,
+    required this.totalVoters,
+    this.closesAt,
+    this.options = const [],
+  });
+
+  final String id;
+  final String question;
+  final bool multiple;
+  final bool allowAddOptions;
+  final DateTime? closesAt;
+  final bool closed;
+  final String creatorId;
+  final int totalVoters;
+  final List<ChatPollOption> options;
+}
+
+class ChatPollOption {
+  const ChatPollOption({
+    required this.id,
+    required this.text,
+    required this.count,
+    this.voterIds = const [],
+  });
+
+  final String id;
+  final String text;
+  final int count;
+  final List<String> voterIds;
 }
