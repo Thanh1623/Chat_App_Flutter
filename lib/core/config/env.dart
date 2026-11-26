@@ -1,4 +1,5 @@
-/// Build-time config via `--dart-define-from-file=.env.dev.json`.
+/// Build-time config via `--dart-define-from-file=.env.dev.json`
+/// or `.env.prod.json` for store/release builds.
 abstract final class Env {
   static String get name =>
       const String.fromEnvironment('ENV', defaultValue: 'dev');
