@@ -10,6 +10,7 @@ import 'package:url_launcher/url_launcher.dart';
 Future<void> showRoomMediaSheet({
   required BuildContext context,
   required String roomId,
+  int initialTab = 0,
 }) {
   return showModalBottomSheet<void>(
     context: context,
@@ -17,15 +18,16 @@ Future<void> showRoomMediaSheet({
     useSafeArea: true,
     builder: (ctx) => SizedBox(
       height: MediaQuery.of(ctx).size.height * 0.75,
-      child: RoomMediaSheet(roomId: roomId),
+      child: RoomMediaSheet(roomId: roomId, initialTab: initialTab),
     ),
   );
 }
 
 class RoomMediaSheet extends ConsumerStatefulWidget {
-  const RoomMediaSheet({super.key, required this.roomId});
+  const RoomMediaSheet({super.key, required this.roomId, this.initialTab = 0});
 
   final String roomId;
+  final int initialTab;
 
   @override
   ConsumerState<RoomMediaSheet> createState() => _RoomMediaSheetState();
@@ -69,32 +71,33 @@ class _RoomMediaSheetState extends ConsumerState<RoomMediaSheet> {
     return Material(
       color: Theme.of(context).colorScheme.surface,
       child: DefaultTabController(
-      length: 3,
-      child: Column(
-        children: [
-          const Padding(
-            padding: EdgeInsets.only(top: 10),
-            child: SizedBox(
-              width: 36,
-              height: 4,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: Colors.black12,
-                  borderRadius: BorderRadius.all(Radius.circular(99)),
+        length: 3,
+        initialIndex: widget.initialTab.clamp(0, 2),
+        child: Column(
+          children: [
+            const Padding(
+              padding: EdgeInsets.only(top: 10),
+              child: SizedBox(
+                width: 36,
+                height: 4,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: Colors.black12,
+                    borderRadius: BorderRadius.all(Radius.circular(99)),
+                  ),
                 ),
               ),
             ),
-          ),
-          TabBar(
-            tabs: [
-              Tab(text: _tabLabel('Ảnh', _images?.length)),
-              Tab(text: _tabLabel('File', _files?.length)),
-              Tab(text: _tabLabel('Link', _links?.length)),
-            ],
-          ),
-          Expanded(child: _body()),
-        ],
-      ),
+            TabBar(
+              tabs: [
+                Tab(text: _tabLabel('Ảnh', _images?.length)),
+                Tab(text: _tabLabel('File', _files?.length)),
+                Tab(text: _tabLabel('Link', _links?.length)),
+              ],
+            ),
+            Expanded(child: _body()),
+          ],
+        ),
       ),
     );
   }
@@ -181,7 +184,11 @@ class _FilesList extends StatelessWidget {
             : pinnedMessageTime(file.createdAt!);
         return ListTile(
           leading: const Icon(Icons.insert_drive_file_outlined),
-          title: Text(file.filename, maxLines: 1, overflow: TextOverflow.ellipsis),
+          title: Text(
+            file.filename,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
           subtitle: Text(
             [
               if (file.sizeBytes > 0) formatFileSize(file.sizeBytes),
@@ -256,18 +263,21 @@ void _openImage(BuildContext context, String url) {
     context: context,
     builder: (ctx) => Dialog(
       insetPadding: const EdgeInsets.all(16),
-      child: InteractiveViewer(
-        child: Image.network(url, fit: BoxFit.contain),
-      ),
+      child: InteractiveViewer(child: Image.network(url, fit: BoxFit.contain)),
     ),
   );
 }
 
-Future<void> _openUrl(BuildContext context, String url, String failMessage) async {
+Future<void> _openUrl(
+  BuildContext context,
+  String url,
+  String failMessage,
+) async {
   final uri = Uri.tryParse(url);
   if (uri == null) return;
   final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
   if (!ok && context.mounted) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(failMessage)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(failMessage)));
   }
 }

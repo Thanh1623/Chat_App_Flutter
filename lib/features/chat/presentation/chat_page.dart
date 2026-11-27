@@ -10,18 +10,15 @@ import 'package:chat_app/features/chat/presentation/files/chat_file_send.dart';
 import 'package:chat_app/features/chat/presentation/images/chat_image_send.dart';
 import 'package:chat_app/features/chat/presentation/providers/chat_controller.dart';
 import 'package:chat_app/features/chat/presentation/widgets/chat_message_avatar.dart';
+import 'package:chat_app/features/chat/presentation/conversation_info_page.dart';
 import 'package:chat_app/features/chat/presentation/widgets/create_poll_sheet.dart';
 import 'package:chat_app/features/chat/presentation/widgets/create_reminder_sheet.dart';
 import 'package:chat_app/features/chat/presentation/widgets/create_task_sheet.dart';
-import 'package:chat_app/features/chat/presentation/widgets/group_members_sheet.dart';
-import 'package:chat_app/features/chat/presentation/widgets/group_settings_sheet.dart';
 import 'package:chat_app/features/chat/presentation/widgets/message_actions_sheet.dart';
 import 'package:chat_app/features/chat/presentation/widgets/message_seen_sheet.dart';
 import 'package:chat_app/features/chat/presentation/widgets/pinned_messages_sheet.dart';
 import 'package:chat_app/features/chat/presentation/widgets/poll_card.dart';
 import 'package:chat_app/features/chat/presentation/widgets/reaction_users_sheet.dart';
-import 'package:chat_app/features/chat/presentation/widgets/reminders_sheet.dart';
-import 'package:chat_app/features/chat/presentation/widgets/room_media_sheet.dart';
 import 'package:chat_app/features/chat/presentation/widgets/work_task_card.dart';
 import 'package:chat_app/features/conversations/presentation/providers/conversations_provider.dart';
 import 'package:chat_app/features/presence/presentation/presence_provider.dart';
@@ -219,67 +216,18 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     return null;
   }
 
-  Future<void> _openDirectPeerProfile() async {
-    if (widget.isGroup) return;
-
-    final peerId = _directPeerUserId();
-    if (peerId != null) {
-      _openUserProfile(peerId);
-      return;
-    }
-
-    final myId =
-        ref.read(authControllerProvider).user?.id ??
-        ref.read(sessionStorageProvider).user?.id;
-    final myIdNorm = myId?.trim() ?? '';
-    try {
-      final members = await ref
-          .read(conversationsRepositoryProvider)
-          .fetchRoomMembers(widget.conversationId);
-      if (!mounted) return;
-
-      final others = myIdNorm.isEmpty
-          ? members
-          : members.where((m) => m.id.trim() != myIdNorm).toList();
-      if (others.length == 1) {
-        _openUserProfile(others.first.id);
-        return;
-      }
-
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Không tìm thấy hồ sơ')));
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(e.toString())));
-      }
-    }
-  }
-
-  Future<void> _openGroupSettings() async {
-    final inbox = ref
-        .read(conversationsInboxProvider)
-        .valueOrNull
-        ?.items
-        .where((c) => c.id == widget.conversationId);
-    final fromInbox = inbox == null || inbox.isEmpty ? null : inbox.first;
-    await showGroupSettingsSheet(
-      context: context,
-      roomId: widget.conversationId,
-      name: (fromInbox?.title ?? widget.title ?? '').trim(),
-      avatarUrl: fromInbox?.avatarUrl ?? '',
-    );
-  }
-
-  Future<void> _openMembers() async {
-    await showGroupMembersSheet(
-      context: context,
-      roomId: widget.conversationId,
-      canManage: widget.canDelete,
-      onChanged: _loadMemberAvatars,
+  void _openConversationInfo() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => ConversationInfoPage(
+          conversationId: widget.conversationId,
+          title: widget.title,
+          canDelete: widget.canDelete,
+          isGroup: widget.isGroup,
+          peerUserId: widget.peerUserId,
+          onMembersChanged: _loadMemberAvatars,
+        ),
+      ),
     );
   }
 
@@ -349,28 +297,6 @@ class _ChatPageState extends ConsumerState<ChatPage> {
     );
   }
 
-  Future<void> _confirmDeleteGroup() async {
-    final ok = await showConfirmDialog(
-      context: context,
-      title: 'Xóa nhóm?',
-      message: 'Toàn bộ tin nhắn trong nhóm sẽ bị xóa. Không thể hoàn tác.',
-    );
-    if (!ok || !mounted) return;
-
-    try {
-      await ref
-          .read(conversationsRepositoryProvider)
-          .deleteRoom(widget.conversationId);
-      ref.read(conversationsInboxProvider.notifier).refreshInbox();
-      if (mounted) Navigator.of(context).pop();
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(e.toString())));
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final myId = ref.watch(sessionStorageProvider).user?.id;
@@ -401,7 +327,7 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           backgroundColor: primary,
           foregroundColor: Colors.white,
           title: InkWell(
-            onTap: widget.isGroup ? _openGroupSettings : _openDirectPeerProfile,
+            onTap: _openConversationInfo,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -429,51 +355,10 @@ class _ChatPageState extends ConsumerState<ChatPage> {
           ),
           actions: [
             IconButton(
-              tooltip: 'Ảnh, file, link',
-              onPressed: () => showRoomMediaSheet(
-                context: context,
-                roomId: widget.conversationId,
-              ),
-              icon: const Icon(Icons.perm_media_outlined),
+              tooltip: 'Thông tin hội thoại',
+              onPressed: _openConversationInfo,
+              icon: const Icon(Icons.menu),
             ),
-            IconButton(
-              tooltip: 'Nhắc hẹn',
-              onPressed: () => showRoomRemindersSheet(
-                context: context,
-                roomId: widget.conversationId,
-              ),
-              icon: const Icon(Icons.alarm_outlined),
-            ),
-            if (!widget.isGroup)
-              IconButton(
-                tooltip: 'Xem hồ sơ',
-                onPressed: _openDirectPeerProfile,
-                icon: const Icon(Icons.person_outline),
-              ),
-            if (widget.isGroup)
-              PopupMenuButton<String>(
-                icon: const Icon(Icons.more_vert),
-                onSelected: (value) {
-                  if (value == 'settings') _openGroupSettings();
-                  if (value == 'members') _openMembers();
-                  if (value == 'delete') _confirmDeleteGroup();
-                },
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 'settings',
-                    child: Text('Đổi tên / ảnh nhóm'),
-                  ),
-                  const PopupMenuItem(
-                    value: 'members',
-                    child: Text('Thành viên'),
-                  ),
-                  if (widget.canDelete)
-                    const PopupMenuItem(
-                      value: 'delete',
-                      child: Text('Xóa nhóm'),
-                    ),
-                ],
-              ),
           ],
         ),
         body: Column(
